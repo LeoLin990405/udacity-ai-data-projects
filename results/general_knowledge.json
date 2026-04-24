@@ -1,0 +1,14 @@
+[
+  {
+    "q": "What is the capital of France?",
+    "a": "The capital of France is Paris."
+  },
+  {
+    "q": "Explain photosynthesis in one sentence.",
+    "a": "Photosynthesis is the process by which plants, algae, and some bacteria convert light energy, usually from the sun, into chemical energy stored in glucose molecules."
+  },
+  {
+    "q": "What is 15 * 23?",
+    "a": "The product of 15 and 23 is 345."
+  }
+]

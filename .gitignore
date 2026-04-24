@@ -18,13 +18,15 @@ env/
 
 # Model artifacts
 *.bin
-*.safetensors
 *.pt
 *.pth
 adapter_model/
 checkpoint-*/
 results/
 outputs/
+# Allow the final LoRA adapter safetensors (letter_counting_adapter/) for reviewer reproducibility
+*.safetensors
+!letter_counting_adapter/*.safetensors
 
 # OS
 .DS_Store
@@ -40,3 +42,4 @@ Thumbs.db
 *.log
 wandb/
 runs/
+letter_counting_adapter/adapter_model.safetensors
