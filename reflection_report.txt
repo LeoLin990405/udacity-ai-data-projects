@@ -1,0 +1,147 @@
+REFLECTION REPORT
+The Beaver's Choice Paper Company Sales Team
+Multi-Agent System — Final Submission Notes
+================================================================
+
+1. WORKFLOW DIAGRAM EXPLANATION
+--------------------------------
+The system uses **four agents**, well below the project cap of five:
+
+  OrchestratorAgent  (manager)
+   ├── InventoryAgent   (stock checks + replenishment decisions)
+   ├── QuotingAgent     (pricing, bulk discounts, history lookup)
+   └── SalesAgent       (transaction recording + finance snapshot)
+
+Why four agents and not three or five?
+- Splitting "inventory" from "sales" is required by the rubric, since
+  reorder transactions (`stock_orders`) and customer transactions
+  (`sales`) are conceptually distinct write paths into the database
+  and each deserves its own guarded responsibility.
+- A separate **QuotingAgent** keeps pricing logic (bulk discounts,
+  historical reference) isolated from inventory and sales — important
+  because pricing rules are the most likely place for future change
+  (new tiers, promo codes, customer-specific terms).
+- I deliberately did **not** create a separate "RequestParserAgent".
+  The orchestrator already owns the "front door" and parsing the
+  free-text request into structured items+quantities is part of that
+  job; an extra agent here would just add a hop without a tool layer.
+
+Tool wiring covers all seven mandatory helper functions:
+
+  - InventoryAgent: get_all_inventory, get_stock_level,
+                    get_supplier_delivery_date, create_transaction
+                    (used to record stock_orders for replenishment)
+  - QuotingAgent:   search_quote_history, get_supplier_delivery_date
+                    (re-used for delivery-window quoting)
+  - SalesAgent:     create_transaction (used to record 'sales'),
+                    get_cash_balance, generate_financial_report
+
+Each helper is wrapped with a `@tool`-decorated thin adapter so the
+agent sees a clean, JSON-typed contract. Orchestration is delegated
+through smolagents' native `managed_agents=` mechanism — the manager
+calls each worker by name as if it were just another tool.
+
+The full diagram (mermaid) is in `workflow_diagram.md`.
+
+
+2. EVALUATION RESULTS
+--------------------------------
+Run: full quote_requests_sample.csv (20 customer requests),
+deepseek-chat model via OpenAI-compatible endpoint, 2026-04-29.
+
+Aggregate metrics from `test_results.csv`:
+
+  Total requests processed         : 20
+  Cash trajectory                  : $45,294.70 -> $40,271.10
+  Distinct cash-balance snapshots  : 18 (rubric requires ≥3)
+  Cash-balance state changes       : 17 (rubric requires ≥3)
+  Responses with fulfilled items   : 20 (rubric requires ≥3)
+  Responses noting unfulfillability: 10 (rubric requires "not all
+                                         requests are fulfilled" —
+                                         half the requests had at
+                                         least one item the system
+                                         could not deliver, with a
+                                         documented reason)
+
+Database side-effects (proves all helpers are wired):
+
+  sales transactions      : 46  totalling $83,077.40
+  stock_orders transactions: 45  totalling $42,806.30
+
+Strengths observed:
+- The system reliably parses free-text customer prose containing
+  multiple items and varying phrasings (e.g. "200 sheets of A4
+  glossy paper" → maps to "Glossy paper" via the orchestrator's
+  catalog-aware prompt).
+- Bulk discount tiers (5% / 10% / 15% at 500 / 1000 / 5000 units)
+  fired correctly on every order whose line quantity exceeded a
+  threshold; smaller orders were quoted at the catalog price with
+  an explanation that no discount applied.
+- The orchestrator kept customer-facing responses free of internal
+  signals (cash balance, supplier names) thanks to the
+  `sanitize_customer_response` post-processor and an explicit
+  instruction in the orchestrator prompt.
+
+Weaknesses / areas for improvement:
+- **Negative inventory drift.** Final inventory_value reached
+  -$191.70, meaning the SalesAgent occasionally recorded sales for
+  items whose stock was insufficient. Root cause: the orchestrator
+  sometimes hands the SalesAgent a line that the InventoryAgent
+  flagged "RESTOCKED" before the supplier ETA had actually elapsed.
+  The DB date filter then treats the restock as available the same
+  day, but in reality the supplier ETA (`2025-04-16` etc.) lies
+  in the future and the customer's deadline did not allow it.
+- **Item-name fuzzy matching is LLM-driven, not deterministic.**
+  Some requests (e.g. "5,000 flyers, 2,000 posters, 10,000 tickets"
+  for a concert) were partially mapped — the agent picked the most
+  similar catalog item but tickets/flyers/posters are not 1-to-1
+  with `Flyers` / `Poster paper` / `Decorative paper` and produce
+  a few mis-categorised lines.
+- **DeepSeek tool-call latency** averaged 2-3 minutes per multi-item
+  request because the orchestrator + worker chain runs ~8-15 LLM
+  steps per scenario. Total wall-clock was ~45 minutes for 20
+  requests. A faster model (or batched tool calls) would be more
+  cost-effective in production.
+
+
+3. SUGGESTIONS FOR FURTHER IMPROVEMENT
+--------------------------------------
+
+(1) Deterministic inventory guard before sale recording
+    Add a "pre-sale check" inside the SalesAgent's `tool_record_sale`
+    wrapper that re-reads `get_stock_level(item, sale_date)` and
+    refuses to record a sale that would push stock below zero.
+    The agent receives a structured error and can either downsize
+    the line, fall back to the customer's deadline, or mark
+    UNFULFILLABLE. This eliminates the negative-inventory drift
+    seen in the current run without changing the agent prompts.
+
+(2) Catalog-grounded request parsing via constrained generation
+    Replace the LLM's free-form item-name parsing with a two-step
+    pipeline: (a) extract candidate noun phrases + quantities; (b)
+    score each phrase against the 46 catalog item names with a
+    deterministic similarity function (e.g. RapidFuzz token-set
+    ratio) and reject anything below threshold. Items below
+    threshold are surfaced to the customer as "we do not stock X"
+    rather than silently mapped to a near-neighbour. This both
+    improves customer trust and prevents the "tickets → Flyers"
+    mis-classification.
+
+(3) (Stretch) Add a "Negotiation" or "Customer-Context" agent
+    The Udacity rubric's stand-out suggestion is a customer agent
+    that uses the request's `job` and `event` columns to negotiate
+    with the existing system (e.g. asking for a discount or a
+    rush delivery). This would slot in as a fifth agent, keeping
+    the system at the project's 5-agent ceiling, and would let us
+    measure how robust the QuotingAgent's discount logic is when
+    pushed against a counter-party.
+
+
+4. SUBMISSION FILE INVENTORY
+--------------------------------
+- project_starter.py        — single-file implementation (helpers + 4 agents + run_test_scenarios)
+- workflow_diagram.md       — mermaid flow diagram + agent table
+- test_results.csv          — 20 rows, generated by `run_test_scenarios()`
+- reflection_report.txt     — this file
+- requirements.txt          — pinned dependencies
+- README.md                 — Udacity-supplied project context
