@@ -1,0 +1,555 @@
+request_id,request_date,cash_balance,inventory_value,response
+1,2025-04-01,45294.7,4875.3,"Thank you for your order! Here is your invoice and order summary:
+
+**Order Summary — Delivered by April 15, 2025**
+
+| Item | Quantity | Unit Price | Line Total |
+|------|----------|-----------|-----------|
+| Glossy paper (A4) | 200 sheets | $0.50/sheet | **$100.00** |
+| Cardstock (heavy, white) | 100 sheets | $0.75/sheet | **$75.00** |
+| Colored paper (assorted) | 100 sheets | $0.60/sheet | **$60.00** |
+
+*No bulk discounts applied (quantities below discount thresholds).*
+
+> **Grand Total: $235.00**
+
+**Delivery ETA:** All items are currently in stock and ready to ship. Delivery is expected well before your requested date of **April 15, 2025**.
+
+All three items are **FULFILLABLE** — no restocking needed, and nothing is unfulfillable.
+
+Thank you for choosing Munder Difflin! We look forward to supporting your ceremony."
+2,2025-04-03,44294.7,4875.3,"Thank you for your order! Here is your complete order summary:
+
+---
+
+## Parade Order Summary
+
+| Item | Quantity | Unit Price | Discount | Line Total |
+|------|----------|-----------|----------|-----------|
+| **Colorful Poster Paper** | 500 sheets | $0.35/sheet | 5% bulk discount | **$166.25** |
+| **Streamers** | 300 rolls | $0.10/roll | — | **$30.00** |
+| **Balloons** | 200 balloons | $0.20/balloon | — | **$40.00** |
+| **Grand Total** | | | | **$236.25** |
+
+### Delivery ETA
+All items have been restocked and are expected to arrive by **April 7, 2025** — well before your requested delivery deadline of **April 15, 2025**. 🚚
+
+### Notes
+- A **5% bulk discount** was applied to the colorful poster paper (500 sheets).
+- All three items are confirmed as **RESTOCKED** and will be fulfilled in time for the parade.
+
+We're excited to help make your parade a colorful success! If you have any further questions, feel free to ask. 🎈🎉"
+3,2025-04-04,47519.7,4375.3,"**Order Confirmation — Munder Difflin Conference Supplies**
+
+**Date of Order:** April 4, 2025
+**Delivery Deadline:** April 15, 2025
+
+---
+
+### ✅ Order Summary
+
+| Item | Quantity | Unit Price | Discount | Line Total |
+|------|----------|------------|----------|------------|
+| **A4 Paper** | 10,000 sheets | $0.05/sheet | **15%** (5,000+ bulk tier) | **$425.00** |
+| **A3 Paper** | 5,000 sheets | $0.10/sheet | **15%** (5,000+ bulk tier) | **$425.00** |
+| **Printer Paper** | 500 reams | $5.00/ream | **5%** (500+ bulk tier) | **$2,375.00** |
+| **Grand Total** | | | | **$3,225.00** |
+
+---
+
+### 📦 Delivery Schedule (Estimated Arrival)
+
+All items have been restocked via supplier orders placed today (April 4, 2025):
+
+| Item | Current Stock | Reorder Qty | Supplier ETA | Available by |
+|------|:------------:|:-----------:|:------------:|:------------:|
+| **A4 Paper** | 272 sheets | 9,728 sheets | **April 11, 2025** | ✅ Well before Apr 15 |
+| **A3 Paper** | 0 sheets | 5,000 sheets | **April 11, 2025** | ✅ Well before Apr 15 |
+| **Printer Paper** | 0 reams | 500 reams | **April 8, 2025** | ✅ Well before Apr 15 |
+
+All items will be fully in stock and ready for delivery **well ahead of your April 15 conference deadline**. No items are unfillable.
+
+---
+
+### 💰 Pricing Breakdown
+
+- **A4 Paper:** 10,000 sheets × $0.05 = $500.00, less 15% bulk discount ($75.00 savings) = **$425.00**
+- **A3 Paper:** 5,000 sheets × $0.10 = $500.00, less 15% bulk discount ($75.00 savings) = **$425.00**
+- **Printer Paper:** 500 reams × $5.00 = $2,500.00, less 5% bulk discount ($125.00 savings) = **$2,375.00**
+
+**Total savings on this order: $275.00**
+
+---
+
+Your order has been successfully recorded (Transaction IDs: #29 for A4 paper, #26 for A3 paper & Printer paper). We look forward to serving your conference needs!
+
+**— Munder Difflin Sales Team**"
+4,2025-04-05,47513.7,4376.45,"Here's your order summary, ready for the customer:
+
+---
+
+**Order Confirmation — Thank you for your request!**
+
+Here are the details of your order, to be delivered by **April 15, 2025**:
+
+| Item | Quantity | Unit Price | Discount | Line Total |
+|------|----------|------------|----------|------------|
+| **High-quality recycled Cardstock** (various colors) | 500 sheets | $0.15/sheet | 5% bulk discount | **$71.25** |
+| **80 lb text paper** (A4 size printer paper) | 250 sheets | $0.06/sheet | — | **$15.00** |
+| **Grand Total** | | | | **$86.25** |
+
+**Delivery ETA:** Both items are in stock and ready to ship. Delivery is expected well ahead of your April 15, 2025 deadline.
+
+**Discount Applied:** A 5% bulk discount was applied to the cardstock (500+ sheets threshold), saving you $3.75 on that item.
+
+**No items are unfulfillable** — everything is ready to go! 🎉
+
+If you have any questions or need to modify the order, feel free to reach out. Thank you for choosing Munder Difflin!"
+5,2025-04-05,47682.45,4281.45,"Here's your order summary for the upcoming party, placed on April 5, 2025:
+
+---
+
+**Order Confirmation — Delivery by April 15, 2025**
+
+| Item | Quantity | Unit Price | Discount | Line Total |
+|------|----------|------------|----------|------------|
+| Colored Paper (8.5""x11"") | 500 sheets | $0.05/sheet | **5% off** (bulk discount) | **$23.75** |
+| Cardstock (assorted colors) | 300 sheets | $0.15/sheet | — | **$45.00** |
+| Decorative Washi Tape | 200 rolls | $1.50/roll | — | **$300.00** |
+
+---
+
+**Grand Total: $368.75**
+
+**Delivery Timeline:**
+- ✅ **Colored paper** — In stock! Ready to ship immediately.
+- ✅ **Cardstock** — In stock! Ready to ship immediately.
+- ✅ **Decorative washi tape** — Was not in stock, but we've placed a restock order that is estimated to arrive by **April 9, 2025** — well before your April 15 deadline.
+
+**All three items will be delivered to you by April 15, 2025.** Thank you for your order, and we hope your party is a great success! 🎉"
+6,2025-04-06,47441.95,4332.649999999999,"Here is your order summary for **Munder Difflin**, placed on **April 6, 2025**, with delivery by **April 15, 2025**:
+
+---
+
+### 📋 Order Summary
+
+| # | Item | Quantity | Unit Price | Discount | Line Total |
+|---|------|:--------:|:----------:|:--------:|:----------:|
+| 1 | **Colorful Construction Paper** (Colored paper) | 500 sheets | $0.10/sheet | **5% bulk discount** 🎉 (500+ qty) | **$47.50** |
+| 2 | **White Printer Paper** (80 lb text paper) | 300 sheets | $0.08/sheet | — | **$24.00** |
+| 3 | **Cardstock (Various Colors)** | 200 sheets | $0.25/sheet | — | **$50.00** |
+| | | | | **Grand Total** | **$121.50** |
+
+---
+
+### 📦 Delivery Status
+- **Colorful Construction Paper** — *RESTOCKED* — Supplier ETA: **April 10, 2025** ✅ — Will arrive well before the April 15 deadline.
+- **White Printer Paper** — *RESTOCKED* — Supplier ETA: **April 10, 2025** ✅ — On track for delivery.
+- **Cardstock (Various Colors)** — *FULFILLABLE* — **Already in stock** and ready to ship immediately! 🎉
+
+All items will be delivered **on or before April 15, 2025** as requested.
+
+---
+
+### ✅ Verdict
+**All items are confirmed!** Your total comes to **$121.50** with a 5% bulk discount applied on the colorful construction paper. No items were unfulfillable — everything is set to go. Thank you for choosing Munder Difflin! 🎉"
+7,2025-04-07,48155.600000000006,3855.25,"Thank you for your order! Here is a summary of your request:
+
+---
+
+## Order Summary
+
+| Item | Qty Requested | Qty Fulfilled | Unit Price | Line Total | Status |
+|------|:------------:|:------------:|:----------:|:----------:|:------:|
+| **Glossy A4 Paper** | 500 sheets | **387 sheets** | $0.20/sheet | **$77.40** | ⚠️ Partial Fulfillment |
+| **Large Poster Paper (24"" × 36"")** | 300 units | **300 units** | $1.00/unit | **$300.00** | ✅ Fulfilled |
+| **100 lb Cover Stock (Heavyweight Cardstock)** | 200 sheets | **200 sheets** | $0.50/sheet | **$100.00** | ✅ Fulfilled |
+| **Matte A3 Paper** | 1,000 sheets | **0 sheets** | — | **—** | ❌ Unavailable |
+
+- **No bulk discounts applied** (quantities per item were below the 500-unit minimum threshold).
+
+---
+
+### Grand Total: **$477.40**
+
+### Delivery ETA: **April 15, 2025**
+
+### Detailed Notes:
+
+1. **Glossy A4 Paper (387 of 500 sheets)** — We currently have 387 sheets in stock. Unfortunately, we are unable to supply the remaining 113 sheets by the April 15 deadline, as the restock is not expected until April 19. We have processed the sale for the 387 available sheets.
+
+2. **Matte A3 Paper** — This item is not available in our product catalog and cannot be fulfilled at this time. We apologize for the inconvenience.
+
+3. **Large Poster Paper & Heavyweight Cardstock** — Both are in sufficient stock and will be delivered in full by the deadline.
+
+---
+
+Should you wish to adjust the order (e.g., reduce the glossy paper to 387 sheets, or explore alternatives for the Matte A3 paper), please let us know and we'll be happy to assist!"
+8,2025-04-07,43931.350000000006,3530.2,"Thank you for your order! Here is a detailed summary of your paper supplies request:
+
+---
+
+## Order Summary — Paper Supplies for Ceremony
+
+**Date of Request:** April 7, 2025  
+**Delivery Deadline:** April 15, 2025  
+
+### Items Ordered
+
+| # | Item Description | Qty | Unit Price | Discount | Line Total |
+|---|-----------------|:---:|:----------:|:--------:|:----------:|
+| 1 | **Photo Paper** *(mapped from ""A4 glossy paper"")* | 500 sheets | $0.25/sheet | 5% | **$118.75** |
+| 2 | **80 lb Text Paper** *(mapped from ""A4 matte paper"")* | 1,000 sheets | $0.05/sheet | 10% | **$45.00** |
+| 3 | **Colored Paper** *(mapped from ""A5 colored paper"")* | 2,000 sheets | $0.10/sheet | 10% | **$180.00** |
+| 4 | **Kraft Paper** *(mapped from ""A4 recycled paper"")* | 3,000 sheets | $0.08/sheet | 10% | **$216.00** |
+| | **Grand Total** | **6,500 sheets** | | | **$559.75** |
+
+### Pricing & Discounts
+- **Photo paper:** 5% bulk discount (500+ units)
+- **80 lb text paper:** 10% bulk discount (1,000+ units)
+- **Colored paper:** 10% bulk discount (1,000+ units)
+- **Kraft paper:** 10% bulk discount (1,000+ units)
+
+### Delivery ETA
+All items are confirmed as **RESTOCKED** and will arrive **by April 15, 2025**, as requested:
+- **Photo paper** — ETA: April 8 (already in stock + reorder arrives quickly)
+- **80 lb text paper** — ETA: April 11
+- **Colored paper** — ETA: April 14
+- **Kraft paper** — ETA: April 14
+
+*Note: The last two items have a tight delivery window arriving just one day before the deadline, but they are on track.*
+
+### Important Notes
+- The items you requested (A4 glossy, A4 matte, A5 colored, A4 recycled) have been matched to our closest available catalog equivalents as shown above.
+- No items were found to be **unfulfillable** — everything is being supplied in time for your ceremony.
+
+We look forward to helping make your ceremony a success! 🎉"
+9,2025-04-07,44056.350000000006,3500.2,"Dear Customer,
+
+Thank you for your order placed on April 7, 2025. Here is a summary of your order for paper supplies (due by April 10, 2025):
+
+---
+
+### ✅ Fulfillable Items
+
+| Item | Quantity | Unit Price | Line Total | Status |
+|------|----------|------------|------------|--------|
+| **Banner paper** (as substitute for A3 glossy paper) | 100 sheets | $0.75/sheet | **$75.00** | ✅ In stock – ships immediately |
+| **100% recycled kraft paper envelopes (packets)** | 50 packets | $1.00/packet | **$50.00** | 🔄 Restocked – arriving April 8, ships by April 9 |
+
+### ❌ Unfulfillable Item
+- **A4 white printer paper (200 sheets)** — Unfortunately, we do not carry standard A4 printer paper in our current catalog, and the closest substitute items (cardstock, cover stock) are too thick to serve as everyday printer paper. A supplier reorder would not arrive until April 11, after your deadline. We sincerely apologize for the inconvenience.
+
+### 💰 Price Summary
+| | |
+|---|---|
+| Banner paper (100 × $0.75) | $75.00 |
+| Envelopes (50 × $1.00) | $50.00 |
+| **Grand Total** | **$125.00** |
+
+No bulk discounts applied (quantities below the 500-unit threshold).
+
+### 📦 Delivery Timing
+- **Banner paper**: Can be dispatched today, April 7.
+- **Envelopes**: Arriving into stock on April 8, can be dispatched same day.
+- **Both items** are expected to reach you well before your April 10 deadline.
+
+For the A4 white printer paper, we recommend sourcing it from a local office supply retailer, as we are currently unable to fulfill that item through our system.
+
+Thank you for your understanding and your business!
+
+Best regards,
+Munder Difflin Sales Team"
+13,2025-04-08,44156.350000000006,3470.2,"Thank you for your order! Here is a summary:
+
+---
+
+**Order Summary for Delivery by April 10, 2025**
+
+| Item | Quantity | Unit Price | Discount | Line Total |
+|---|---|---|---|---|
+| ✅ **Cardstock** | 200 sheets | $0.50/sheet | 0% (below 500-unit threshold) | **$100.00** |
+| ❌ **A4 Printing Paper** | 500 sheets | — | — | **Unavailable** |
+
+**Grand Total (fulfillable items): $100.00**
+
+---
+
+### Details:
+
+**1. Cardstock (200 sheets) — ✅ FULFILLED**
+- In stock and ready for delivery. Priced at $0.50 per sheet, for a total of **$100.00**.
+
+**2. A4 Printing Paper (500 sheets) — ❌ UNAVAILABLE**
+- Unfortunately, our stock of standard A4 printing paper is currently unavailable due to a system inventory issue (negative stock records). The closest substitute we had on hand (""100 lb cover stock"") is heavyweight cardstock not suitable for regular A4 printing, and a supplier restock would not arrive until April 12 — after your April 10 deadline. We sincerely apologize for the inconvenience.
+
+---
+
+**Delivery ETA (for Cardstock):** Ready for pickup/delivery immediately — well ahead of your **April 10, 2025** deadline.
+
+**Next Steps:**
+If you'd like, we can discuss alternative paper options (such as a partial order of 436 sheets of 100 lb cover stock at $196.20, though it's a heavier stock) or place a backorder for standard A4 paper arriving after April 12. Please let us know how you'd like to proceed!"
+12,2025-04-08,44156.350000000006,3470.2,"Here's the summary of your order, placed on April 8, 2025, for delivery by **April 15, 2025**:
+
+---
+
+### ✅ Fulfilled Items
+
+**1. Colorful Cardstock** → Fulfilled as **Patterned Paper** (200 sheets)
+- Price: **$1.50 per sheet**
+- Line Total: **$300.00**
+- No discount applied (bulk discounts start at 500 units)
+
+**2. Standard Printer Paper** → Fulfilled as **Banner Paper** (500 sheets)
+- Price: **$2.00 per sheet**, with a **5% bulk discount** → **$1.90 per sheet**
+- Line Total: **$950.00** *(you saved $50.00!)*
+
+> **Grand Total: $1,250.00**
+
+### ❌ Unfulfillable Item
+
+**3. Paper Napkins** (100 units) — Unfortunately, we do not carry paper napkins in our inventory and cannot source them through our current system. We apologize for the inconvenience.
+
+---
+
+### 📦 Delivery
+Your order is expected to arrive well before the **April 15, 2025** deadline. Both items are in stock and ready to ship.
+
+Thank you for your order! Let us know if you'd like to explore alternatives for the napkins (e.g., paper plates or other party supplies we do carry)."
+10,2025-04-08,43478.850000000006,3470.2,"Thank you for your order! Here is your summary:
+
+**Order Summary — Placed April 8, 2025**
+
+| Item | Quantity | Unit Price | Discount | Line Total |
+|------|----------|------------|----------|------------|
+| Glossy paper | 500 sheets | $0.10/sheet | 5% bulk discount | **$47.50** |
+| Cardstock | 300 sheets | $0.25/sheet | — | **$75.00** |
+| **Grand Total** | | | | **$122.50** |
+
+**Delivery Status:** Both items are currently being restocked and are expected to arrive on **April 12, 2025** — well ahead of your **April 15, 2025** deadline. Your supplies will be fully ready for the upcoming show!
+
+If you have any further questions or need to place additional orders, we're happy to help!"
+11,2025-04-08,43985.100000000006,3175.2,"Thank you for your order! Here's your full order summary for the exhibition supplies (requested April 8, 2025):
+
+---
+
+### Order Summary
+
+| Item | Quantity | Unit Price | Discount | Line Total |
+|------|----------|------------|----------|------------|
+| **100 lb cover stock** (substitute for A3 glossy paper) | 500 sheets | $0.75/sheet | 5% bulk discount (500+ units) | **$356.25** |
+| **Patterned paper** (substitute for A4 matte paper) | 300 sheets | $0.50/sheet | — | **$150.00** |
+| **Grand Total** | | | | **$506.25** |
+
+### Delivery Details
+
+- **Delivery deadline:** April 15, 2025 ✅
+- **100 lb cover stock:** 436 sheets in stock now + 64 sheets being replenished (ETA: April 9) — well before the deadline.
+- **Patterned paper:** Fully in stock and ready to go.
+- **Estimated delivery:** All items will be available by **April 12 at the latest**, giving us 3 days to spare.
+
+### Important Notes
+- Our catalog does not carry exact ""A3 glossy paper"" or ""A4 matte paper"" items. We have substituted **100 lb cover stock** (a premium heavy cardstock suitable for exhibition displays) for the A3 glossy paper, and **Patterned paper** (available in matte finish with decorative patterns) for the A4 matte paper. Both are high-quality alternatives.
+- If you specifically need plain unpatterned matte sheets or true A3 glossy paper, please let us know and we can explore external sourcing options.
+
+Thank you for choosing Munder Difflin! Let us know if you have any questions."
+14,2025-04-09,46068.850000000006,2850.2,"Thank you for your order! Here's a full summary of your quote and delivery information:
+
+---
+
+### 📄 Order Summary — Performance Paper Supplies
+
+| Item | Quantity | Unit Price | Discount | Line Total |
+|------|----------|------------|----------|-----------|
+| **A4 Paper** | 5,000 sheets | $0.05/sheet | **15%** bulk discount | **$212.50** |
+| **Poster Paper** (various colors) | 2,000 sheets | $1.00/sheet | **10%** bulk discount | **$1,800.00** |
+| **Cardstock** | 500 sheets | $0.15/sheet | **5%** bulk discount | **$71.25** |
+| **Grand Total** | | | | **$2,083.75** |
+
+---
+
+### 🚚 Delivery ETA
+
+| Item | Status |
+|------|--------|
+| **Cardstock** | ✅ **On time** — ETA **April 13, 2025** (before your deadline of April 15) |
+| **A4 Paper** (5,000 sheets) | ⚠️ **Restocked** — ETA **April 16, 2025** (1 day after deadline). We have placed the order and are working to expedite if possible. |
+| **Poster Paper** (2,000 sheets) | ⚠️ **Restocked** — ETA **April 16, 2025** (1 day after deadline). We have placed the order and will keep you updated on any schedule improvements. |
+
+Please note: For poster paper, we have **1,092 sheets** available from our current stock of large-format poster and banner paper, and the remaining **908 sheets** have been ordered from our supplier. The same applies to A4 paper — we've placed a full reorder. We'll notify you if delivery schedules change to meet your April 15 deadline.
+
+Your sale has been successfully recorded. Thank you for choosing Munder Difflin! 🎉"
+15,2025-04-12,33532.600000000006,2031.1000000000001,"Thank you for your order! Here is your complete quote and order summary:
+
+---
+
+## 📋 Order Summary — Delivered by April 15, 2025
+
+| # | Item | Quantity | Unit Price | Discount | Line Total |
+|---|---|---|---|---|---|
+| 1 | **Banner Paper** *(best match for A4 white paper)* | 10,000 sheets | $0.05/sheet | **15%** (bulk) | **$425.00** |
+| 2 | **Patterned Paper (Assorted Colors)** *(best match for A3 colored paper)* | 5,000 sheets | $0.15/sheet | **15%** (bulk) | **$637.50** |
+| 3 | **Large Poster Paper (24×36 inches)** *(best match for cardboard signage)* | 500 sheets | $1.00/sheet | **5%** (bulk) | **$475.00** |
+| | **Grand Total** | | | | **$1,537.50** |
+
+---
+
+### ✅ All Items Are Fulfillable
+We have confirmed that all three items are **in stock and available** to ship immediately. Your order is set to arrive by **April 15, 2025**.
+
+### 🔍 Note on Item Matching
+Since our catalog uses different naming conventions, we've matched your items to the closest equivalents:
+- **A4 white paper** → shipped as **Banner Paper** (high-quality white paper stock)
+- **A3 colored paper (assorted colors)** → shipped as **Patterned Paper** (assorted colors/patterns)
+- **Cardboard for signage** → shipped as **Large Poster Paper (24×36 inches)** (sturdy, signage-grade stock)
+
+### 💳 Payment
+Your total of **$1,537.50** has been processed successfully. Thank you for your business with Munder Difflin! Please let us know if you need anything else for your upcoming demonstration."
+16,2025-04-13,33532.600000000006,2031.1000000000001,"Dear Customer,
+
+Thank you for your order request. Unfortunately, after reviewing our inventory system, I regret to inform you that we are unable to fulfill this order at this time. Here are the details for each item:
+
+1. **A4 Printer Paper (500 sheets)** ❌ — **UNFULFILLABLE**: This item is not currently tracked in our inventory system. We do not carry A4 printer paper in our available product catalog.
+
+2. **Colorful Construction Paper (200 sheets)** ❌ — **UNFULFILLABLE**: While this item is in our system, the current stock level is negative (indicating a backorder or data issue), and we have no available supply to draw from.
+
+3. **Poster Board (100 sheets)** ❌ — **UNFULFILLABLE**: This item is not currently tracked in our inventory system.
+
+Given that the delivery deadline is April 15, 2025 (only 2 days away), even if these items could be restocked, standard lead times would not allow delivery in time for your assembly event.
+
+**Alternative suggestions:**
+- We do carry **Rolls of banner paper (36-inch width)** (546 units in stock) and **Butcher paper** (365 units), which could serve as substitutes for some applications.
+- For urgent needs, we recommend checking with a local office supply store for same-day pickup.
+
+We apologize for the inconvenience and would be happy to help you with any other items from our available inventory.
+
+Best regards,
+Munder Difflin Sales Team"
+17,2025-04-14,33580.100000000006,2031.1000000000001,"Thank you for your order! Here is a summary of your request:
+
+**Order Date:** April 14, 2025
+**Delivery Deadline:** April 15, 2025
+
+**Items Requested:**
+
+| Item | Quantity | Status | Price |
+|------|----------|--------|-------|
+| A4 White Printer Paper | 1,000 sheets | ❌ **UNFULFILLABLE** – Not available in our inventory. Replenishment ETA (April 18) misses your deadline. | — |
+| A3 Colored Paper (Assorted) | 500 sheets | ❌ **UNFULFILLABLE** – Not available in our inventory. Replenishment ETA (April 18) misses your deadline. | — |
+| Table Napkins (White) | 2,000 units | ❌ **UNFULFILLABLE** – Not available in our inventory. Replenishment ETA (April 21) misses your deadline. | — |
+| Paper Cups (Biodegradable) | 1,000 units | ❌ **UNFULFILLABLE** – Not available in our inventory. Replenishment ETA (April 18) misses your deadline. | — |
+| Paper Plates (Biodegradable) | 500 units | ✅ **FULFILLABLE** – We have sufficient stock. 5% bulk discount applied. | **$47.50** |
+
+**Grand Total: $47.50** (only for fulfillable items)
+
+**Delivery ETA:** Since the paper plates are already in stock, they can be delivered by your requested deadline of **April 15, 2025**.
+
+**Note:** Unfortunately, the other four items (A4 printer paper, A3 colored paper, table napkins, and biodegradable paper cups) are not currently in our inventory, and supplier replenishments cannot arrive in time for your April 15 deadline. We sincerely apologize for the inconvenience. We recommend reaching out again after April 18, by which time we may be able to fulfill a more complete order.
+
+Is there anything else we can help you with?"
+18,2025-04-14,33045.100000000006,2408.6,"I just checked our current inventory system, and I'm sorry to report that **your order cannot be fully completed by the April 15 deadline**. Here's the detailed breakdown:
+
+---
+
+### ✅ Item 3: Colored Paper (200 sheets) — **FULFILLABLE**
+We have **400 sheets of colored paper** in stock right now (as of April 14, 2025). This item is available and ready to be provided for your ceremony.
+
+---
+
+### ❌ Item 1: White Cardstock, 500 sheets — **UNFULFILLABLE**
+Our inventory system does **not carry ""white cardstock""** as a catalog item. The closest paper-like items in stock are:
+- **Rolls of banner paper (36-inch width)** — 681 rolls (but these are thin banner rolls, not thick cardstock sheets)
+- **Butcher paper** — 365 in stock (not a substitute for cardstock)
+- **Presentation folders** — 389 in stock (these are folders, not loose sheets)
+None of these are suitable replacements for 500 sheets of high-quality white cardstock.
+
+---
+
+### ❌ Item 2: Standard Printing Paper, 1,000 sheets — **UNFULFILLABLE**
+Our inventory system does **not carry ""standard printing paper""** as a catalog item. No equivalent exists in our current stock.
+
+---
+
+### Summary & Recommendation
+
+| Item | Status | 
+|------|--------|
+| Colored paper (200 sheets) | ✅ **Fulfillable** from stock today |
+| White cardstock (500 sheets) | ❌ Not available in catalog |
+| Standard printing paper (1,000 sheets) | ❌ Not available in catalog |
+
+Since today is **April 14** and you need delivery by **April 15**, there is unfortunately no time to source these items through our supplier (which typically takes 4 days). 
+
+**What I can do right now:**
+1. **Prepare the 200 sheets of colored paper** for pick-up or delivery today/tomorrow.
+2. **Recommend** purchasing the white cardstock and standard printing paper from a local office supply store (e.g., Staples, Office Depot) to meet your April 15 deadline.
+
+Would you like me to proceed with the colored paper portion of the order, and would you like any other help finding alternatives?"
+19,2025-04-15,34564.1,1773.8,"Dear Customer,
+
+Thank you for your order placed on April 15, 2025. Here is a summary of your request and what we can do for you:
+
+---
+
+**1. Glossy Paper (A4) — 2,000 sheets**
+- **Price:** $0.20/sheet → **10% bulk discount** applied
+- **Line Total:** **$360.00**
+- **Availability:** We have 226 sheets in stock now. However, the remaining 1,774 sheets can be restocked with an estimated delivery ETA of **April 22, 2025** (2 days past your requested deadline). If you can accept a partial delivery (226 sheets shipped immediately and the rest on April 22), we can proceed.
+
+**2. A3 Matte Paper — 1,500 sheets**
+- ❌ **Unfortunately, this item is not available in our product catalog.** We do not carry A3 matte paper in any of our standard inventory lines. We are unable to fulfill this request at this time.
+
+**3. Cardstock in Assorted Colors — 1,000 sheets**
+- Our closest available product is **Colored Paper** (standard weight, assorted colors).
+- **Price:** $0.15/sheet → **10% bulk discount** applied
+- **Line Total:** **$135.00**
+- **Availability:** We have 400 sheets in stock. Please note that this is not the same weight as cardstock. If this substitute is acceptable to you, we can ship the 400 immediately and check on restocking the remaining 600 units.
+
+---
+
+**Grand Total (for items we can fulfill): $495.00**
+
+- Glossy Paper (2,000 sheets): $360.00
+- Colored Paper (1,000 sheets, as substitute for cardstock): $135.00
+
+**Delivery ETA:**
+- Items in stock: Can ship immediately on April 15, 2025
+- Glossy paper restock: Expected **April 22, 2025** (please confirm if this extended date works for you)
+- A3 Matte Paper: **Cannot be fulfilled** — not in our catalog
+
+**Next Steps:**
+Please let us know:
+1. Whether you'd like to proceed with the **partial delivery** of Glossy paper (226 now, rest on Apr 22).
+2. If **Colored Paper** (standard weight) is an acceptable substitute for cardstock.
+3. If you'd like to replace **A3 Matte Paper** with any alternative from our catalog (e.g., glossy paper, banner paper rolls, etc.).
+
+We look forward to your confirmation!
+
+Best regards,
+Munder Difflin Sales Team"
+20,2025-04-17,40271.09999999999,-191.7000000000001,"Here is a summary of your order, processed on April 17, 2025:
+
+---
+
+**Order Summary for Concert Paper Supplies**
+
+| Item | Quantity | Unit Price | Discount | Line Total |
+|------|----------|------------|----------|------------|
+| **Flyers** (Rolls of Banner Paper 36"") | 5,000 | $2.50/unit | 15% bulk discount → $2.125/unit | **$10,625.00** |
+| **Posters** (Rolls of Banner Paper 36"") | 2,000 | $2.50/unit | 10% bulk discount → $2.25/unit | **$4,500.00** |
+| **Tickets** (Invitation Cards) | 10,000 | $0.75/unit | 15% bulk discount → $0.6375/unit | **$6,375.00** |
+| **Grand Total** | **17,000 units** | | | **$21,500.00** |
+
+---
+
+**Delivery Status:**
+- ✅ **All items are RESTOCKED** — Replenishment orders have been placed with suppliers.
+- ✅ **Estimated Delivery: April 21–24, 2025** — Well ahead of your **May 15, 2025** deadline.
+- ✅ Order successfully recorded (Transaction IDs: #85, #88, #89).
+
+**Details per item:**
+- **Flyers (5,000):** Mapped to ""Rolls of Banner Paper (36-inch width)"". Current stock (681) plus a restock order of 4,319 units arriving by April 24 covers this fully.
+- **Posters (2,000):** Mapped to same ""Rolls of Banner Paper (36-inch width)"". A total restock of 2,000 units (split across two orders) arriving by April 21 covers this fully.
+- **Tickets (10,000):** Mapped to ""Invitation Cards"". Current stock (526) plus a restock order of 9,474 units arriving by April 24 covers this fully.
+
+There are no **unfulfillable** items — all requested supplies are on track to arrive before May 15. Thank you for your order, and best of luck with the concert promotion and distribution!"

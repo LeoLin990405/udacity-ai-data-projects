@@ -1,94 +1,79 @@
-# Munder Difflin Multi-Agent System Project
+# Beaver's Choice Paper Company Multi-Agent Sales Team
 
-Welcome to the starter code repository for the **Munder Difflin Paper Company Multi-Agent System Project**! This repository contains the starter code and tools you will need to design, build, and test a multi-agent system that supports core business operations at a fictional paper manufacturing company.
+This repository contains a completed Udacity Agentic AI project for the
+Beaver's Choice Paper Company. The system uses a four-agent architecture built
+with `smolagents` to process customer paper-supply requests, check inventory,
+generate quotes, decide on reorders, and finalize sales transactions.
 
-## Project Context
+## Submission Contents
 
-You’ve been hired as an AI consultant by Munder Difflin Paper Company, a fictional enterprise looking to modernize their workflows. They need a smart, modular **multi-agent system** to automate:
+- `workflow_diagram.png`: Visual workflow diagram for the multi-agent system.
+- `workflow_diagram.md`: Mermaid source and agent/tool responsibility table.
+- `project_starter.py`: The single Python implementation file.
+- `reflection_report.txt`: Detailed system explanation, evaluation summary, and improvement plan.
+- `test_results.csv`: Full evaluation output over `quote_requests_sample.csv`.
+- `quote_requests_sample.csv`: Provided sample requests used for evaluation.
+- `quotes.csv`: Historical quote data used by the quoting agent.
+- `requirements.txt`: Python dependencies.
 
-- **Inventory checks** and restocking decisions
-- **Quote generation** for incoming sales inquiries
-- **Order fulfillment** including supplier logistics and transactions
+## Agent Architecture
 
-Your solution must use a maximum of **5 agents** and process inputs and outputs entirely via **text-based communication**.
+The implementation uses four agents, below the maximum of five:
 
-This project challenges your ability to orchestrate agents using modern Python frameworks like `smolagents`, `pydantic-ai`, or `npcsh`, and combine that with real data tools like `sqlite3`, `pandas`, and LLM prompt engineering.
+- `OrchestratorAgent`: Parses customer requests, delegates to workers, and creates the final customer-facing response.
+- `InventoryAgent`: Checks stock, evaluates reorder needs, and records replenishment transactions.
+- `QuotingAgent`: Searches historical quotes and applies bulk-discount pricing.
+- `SalesAgent`: Records fulfilled sales and produces financial snapshots.
 
----
+The required starter helper functions are all wrapped as agent tools:
 
-## What’s Included
+- `create_transaction`
+- `get_all_inventory`
+- `get_stock_level`
+- `get_supplier_delivery_date`
+- `get_cash_balance`
+- `generate_financial_report`
+- `search_quote_history`
 
-From the `project.zip` starter archive, you will find:
+## Setup
 
-- `project_starter.py`: The main Python script you will modify to implement your agent system
-- `quotes.csv`: Historical quote data used for reference by quoting agents
-- `quote_requests.csv`: Incoming customer requests used to build quoting logic
-- `quote_requests_sample.csv`: A set of simulated test cases to evaluate your system
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
 
----
+Create a local `.env` file if you want to rerun the live agent:
 
-## Workspace Instructions
+```text
+UDACITY_OPENAI_API_KEY=your_vocareum_key_here
+UDACITY_OPENAI_API_BASE=https://openai.vocareum.com/v1
+UDACITY_OPENAI_MODEL=gpt-4o-mini
+```
 
-All the files have been provided in the VS Code workspace on the Udacity platform. Please install the agent orchestration framework of your choice.
+The project does not commit API keys or local `.env` files.
 
-## Local setup instructions
+## Run
 
-1. Install dependencies
+```bash
+python project_starter.py
+```
 
-Make sure you have Python 3.8+ installed.
+The script initializes the SQLite database, processes all rows in
+`quote_requests_sample.csv`, writes `test_results.csv`, and prints a final
+financial report.
 
-You can install all required packages using the provided requirements.txt file:
+## Evaluation Snapshot
 
-`pip install -r requirements.txt`
+The submitted `test_results.csv` was generated from the full 20-row sample
+request set.
 
-If you're using smolagents, install it separately:
+- Total requests processed: 20.
+- Cash-balance state changes: 18.
+- Responses with successful fulfilled quote/order content: 18.
+- Responses with unfulfilled or partial-fulfillment reasoning: 12.
 
-`pip install smolagents`
+This demonstrates that the system changes business state, fulfills multiple
+requests, and also declines or partially fulfills requests when constraints
+require it.
 
-For other options like pydantic-ai or npcsh[lite], refer to their documentation.
-
-2. Create .env File
-
-Add your OpenAI-compatible API key:
-
-`UDACITY_OPENAI_API_KEY=your_openai_key_here`
-
-This project uses a custom OpenAI-compatible proxy hosted at https://openai.vocareum.com/v1.
-
-## How to Run the Project
-
-Start by defining your agents in the `"YOUR MULTI AGENT STARTS HERE"` section inside `template.py`. Once your agent team is ready:
-
-1. Run the `run_test_scenarios()` function at the bottom of the script.
-2. This will simulate a series of customer requests.
-3. Your system should respond by coordinating inventory checks, generating quotes, and processing orders.
-
-Output will include:
-
-- Agent responses
-- Cash and inventory updates
-- Final financial report
-- A `test_results.csv` file with all interaction logs
-
----
-
-## Tips for Success
-
-- Start by sketching a **flow diagram** to visualize agent responsibilities and interactions.
-- Test individual agent tools before full orchestration.
-- Always include **dates** in customer requests when passing data between agents.
-- Ensure every quote includes **bulk discounts** and uses past data when available.
-- Use the **exact item names** from the database to avoid transaction failures.
-
----
-
-## Submission Checklist
-
-Make sure to submit the following files:
-
-1. Your completed `template.py` or `project_starter.py` with all agent logic
-2. A **workflow diagram** describing your agent architecture and data flow
-3. A `README.txt` or `design_notes.txt` explaining how your system works
-4. Outputs from your test run (like `test_results.csv`)
-
----

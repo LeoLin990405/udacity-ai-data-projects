@@ -3,6 +3,5 @@ __pycache__/
 *.pyc
 .env
 *.bak
-test_results.csv
 munder_difflin.db
 .DS_Store
