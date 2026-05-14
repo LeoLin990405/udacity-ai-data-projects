@@ -1,0 +1,4 @@
+{"timestamp": "2026-05-14T01:07:06.726038+00:00", "session_id": "demo-session", "tool_name": "document_reader", "input": "What was Q2 revenue?", "output": ["financial_report_q2", "financial_report_q1", "healthcare_quality_report"]}
+{"timestamp": "2026-05-14T01:07:06.728812+00:00", "session_id": "demo-session", "tool_name": "document_reader", "input": "Summarize the healthcare quality report.", "output": ["healthcare_quality_report", "financial_report_q1", "financial_report_q2"]}
+{"timestamp": "2026-05-14T01:07:06.730988+00:00", "session_id": "demo-session", "tool_name": "document_reader", "input": "Calculate the difference between 1410000 and 1250000.", "output": ["financial_report_q1", "financial_report_q2", "healthcare_quality_report"]}
+{"timestamp": "2026-05-14T01:07:06.731386+00:00", "session_id": "demo-session", "tool_name": "calculator", "input": "1410000.0 - 1250000.0", "output": "160000.0"}
