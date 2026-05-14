@@ -4,7 +4,7 @@ This is the submitted `ecohome_solution/` project for the EcoHome Energy Advisor
 
 ## Python and Dependencies
 
-Developed locally with Python 3.14. Install with:
+Use Python 3.10 or newer. The project was tested locally with Python 3.14. Install with:
 
 ```bash
 python3 -m venv .venv
@@ -69,14 +69,14 @@ The agent response includes:
 - `search_energy_tips`
 - `calculate_savings`
 
-The weather and electricity pricing tools use deterministic mock data suitable for reproducible local grading. `search_energy_tips` uses ChromaDB with a deterministic local embedding function so it can run without external API calls.
+The weather and electricity pricing tools use deterministic mock data suitable for reproducible local grading. `search_energy_tips` uses ChromaDB with a deterministic local embedding function so it can run without external API calls. During initialization, `_load_or_create_collection()` explicitly loads documents, splits them into overlapping text chunks, stores chunk metadata, and reuses the persistent vector store on later runs.
 
 ## Evaluation
 
 `evaluation.py` implements:
 
 - `evaluate_response()` with accuracy, relevance, completeness, usefulness, and feedback.
-- `evaluate_tool_usage()` with tool appropriateness, tool completeness, missing tools, extra tools, and feedback.
+- `evaluate_tool_usage()` with tool appropriateness, tool completeness, missing tools, extra tools, and feedback. It accepts the raw agent `messages` trace and extracts tool names internally from `AIMessage.tool_calls`.
 - `generate_evaluation_report()` for aggregate metrics, strengths, weaknesses, and improvement recommendations.
 - `display_evaluation_report()` for readable report output.
 

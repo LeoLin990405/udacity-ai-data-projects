@@ -4,6 +4,7 @@ import json
 import os
 import re
 from dataclasses import dataclass, field
+from itertools import count
 from typing import Annotated, Any, TypedDict
 
 from dotenv import load_dotenv
@@ -30,6 +31,10 @@ def _tool_map(tools):
 
 def _invoke(tool, arg):
     return tool.invoke(arg)
+
+
+def _trace_args(arg: Any) -> dict[str, Any]:
+    return arg if isinstance(arg, dict) else {"input": arg}
 
 
 def _extract_kwh(question: str, default: float = 10.0) -> float:
@@ -62,12 +67,20 @@ def _run_tools(state: EnergyAdvisorState) -> EnergyAdvisorState:
     tools = _tool_map(get_all_tools())
     results: dict[str, Any] = {}
     used: list[str] = []
+    tool_messages: list[AIMessage] = []
+    call_counter = count(1)
     for item in state.get("tool_results", {}).get("planned", []):
         if isinstance(item, tuple):
             name, arg = item
         else:
             name, arg = item, state["question"]
         try:
+            tool_messages.append(
+                AIMessage(
+                    content=f"Calling tool {name}",
+                    tool_calls=[{"name": name, "args": _trace_args(arg), "id": f"call_{next(call_counter)}"}],
+                )
+            )
             results[name] = _invoke(tools[name], arg)
             used.append(name)
         except Exception as exc:  # noqa: BLE001
@@ -75,6 +88,7 @@ def _run_tools(state: EnergyAdvisorState) -> EnergyAdvisorState:
     return {
         "tool_results": results,
         "tools_used": used,
+        "messages": tool_messages,
         "decision_log": [f"Executed tools: {used}"],
     }
 

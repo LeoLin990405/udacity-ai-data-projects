@@ -34,7 +34,7 @@ def test_agent_end_to_end_and_evaluation():
         "Estimated savings from moving dishwasher to off peak hours.",
     )
     tool_eval = evaluate_tool_usage(
-        result["tools_used"],
+        result["messages"],
         ["search_energy_tips", "get_electricity_prices", "calculate_savings"],
     )
     report = generate_evaluation_report([

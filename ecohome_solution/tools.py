@@ -16,6 +16,31 @@ DOCUMENTS_DIR = ROOT / "data" / "documents"
 VECTORSTORE_DIR = ROOT / "data" / "vectorstore"
 
 
+def _split_text_into_chunks(text: str, chunk_size: int = 600, chunk_overlap: int = 100) -> list[str]:
+    """Split source documents into overlapping chunks before vector indexing."""
+
+    cleaned = "\n".join(line.strip() for line in text.splitlines() if line.strip())
+    if len(cleaned) <= chunk_size:
+        return [cleaned]
+
+    chunks: list[str] = []
+    start = 0
+    while start < len(cleaned):
+        end = min(start + chunk_size, len(cleaned))
+        split_at = cleaned.rfind("\n", start, end)
+        if split_at <= start:
+            split_at = cleaned.rfind(". ", start, end)
+        if split_at <= start:
+            split_at = end
+        chunk = cleaned[start:split_at].strip()
+        if chunk:
+            chunks.append(chunk)
+        start = max(split_at - chunk_overlap, split_at)
+        if start >= len(cleaned) or split_at == len(cleaned):
+            break
+    return chunks or [cleaned]
+
+
 def _stable_float(text: str, low: float, high: float) -> float:
     digest = hashlib.md5(text.encode("utf-8")).hexdigest()
     value = int(digest[:8], 16) / 0xFFFFFFFF
@@ -144,14 +169,32 @@ def _load_or_create_collection():
     VECTORSTORE_DIR.mkdir(parents=True, exist_ok=True)
     client = chromadb.PersistentClient(path=str(VECTORSTORE_DIR))
     collection = client.get_or_create_collection("energy_tips")
+
+    if collection.count() > 0:
+        sample = collection.get(limit=1)
+        metadata = (sample.get("metadatas") or [{}])[0] or {}
+        if "chunk_index" not in metadata:
+            client.delete_collection("energy_tips")
+            collection = client.get_or_create_collection("energy_tips")
+
     if collection.count() == 0:
         ids, documents, metadatas, embeddings = [], [], [], []
         for path in sorted(DOCUMENTS_DIR.glob("*.txt")):
             text = path.read_text(encoding="utf-8")
-            ids.append(path.stem)
-            documents.append(text)
-            metadatas.append({"source": path.name, "topic": path.stem})
-            embeddings.append(_simple_embedding(text))
+            chunks = _split_text_into_chunks(text)
+            for chunk_index, chunk in enumerate(chunks):
+                chunk_id = f"{path.stem}-{chunk_index}"
+                ids.append(chunk_id)
+                documents.append(chunk)
+                metadatas.append(
+                    {
+                        "source": path.name,
+                        "topic": path.stem,
+                        "chunk_index": chunk_index,
+                        "chunk_count": len(chunks),
+                    }
+                )
+                embeddings.append(_simple_embedding(chunk))
         if documents:
             collection.add(ids=ids, documents=documents, metadatas=metadatas, embeddings=embeddings)
     return collection

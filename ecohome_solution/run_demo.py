@@ -41,7 +41,7 @@ def main() -> None:
                 "response": output["final_response"],
                 "tools_used": output["tools_used"],
                 "response_evaluation": evaluate_response(case["question"], output["final_response"], case["expected"]),
-                "tool_evaluation": evaluate_tool_usage(output["tools_used"], case["tools"]),
+                "tool_evaluation": evaluate_tool_usage(output["messages"], case["tools"]),
             }
         )
     report = generate_evaluation_report(results)

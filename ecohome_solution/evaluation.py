@@ -31,10 +31,31 @@ def evaluate_response(question: str, final_response: str, expected_response: str
     return scores
 
 
-def evaluate_tool_usage(messages_list: list[str], expected_tools: list[str]) -> dict[str, Any]:
-    """Evaluate whether the agent used appropriate and complete tools."""
+def _extract_tool_names(messages_list: list[Any]) -> list[str]:
+    """Extract tool names from a raw LangChain message trace."""
 
-    used = set(messages_list)
+    used: list[str] = []
+    for message in messages_list:
+        for call in getattr(message, "tool_calls", []) or []:
+            if isinstance(call, dict) and call.get("name"):
+                used.append(call["name"])
+
+        raw_calls = getattr(message, "additional_kwargs", {}).get("tool_calls", [])
+        for raw_call in raw_calls or []:
+            function_payload = raw_call.get("function", {}) if isinstance(raw_call, dict) else {}
+            if function_payload.get("name"):
+                used.append(function_payload["name"])
+
+        if isinstance(message, str):
+            used.append(message)
+    return used
+
+
+def evaluate_tool_usage(messages_list: list[Any], expected_tools: list[str]) -> dict[str, Any]:
+    """Evaluate tool selection by inspecting raw agent messages for tool calls."""
+
+    used_tools = _extract_tool_names(messages_list)
+    used = set(used_tools)
     expected = set(expected_tools)
     missing = sorted(expected - used)
     extra = sorted(used - expected)
@@ -45,7 +66,7 @@ def evaluate_tool_usage(messages_list: list[str], expected_tools: list[str]) -> 
         "tool_completeness": round(completeness, 3),
         "missing_tools": missing,
         "extra_tools": extra,
-        "feedback": f"Used {sorted(used)}; expected {sorted(expected)}.",
+        "feedback": f"Extracted tool calls {sorted(used)} from raw messages; expected {sorted(expected)}.",
     }
 
 
