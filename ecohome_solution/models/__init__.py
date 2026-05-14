@@ -1,0 +1,1 @@
+"""EcoHome database model helpers."""

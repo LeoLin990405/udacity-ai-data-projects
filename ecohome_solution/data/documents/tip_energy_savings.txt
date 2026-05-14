@@ -1,0 +1,2 @@
+General energy savings:
+The highest-impact strategy is shifting flexible loads away from expensive grid periods. Combine time-of-use pricing, solar generation forecasts, and device flexibility to reduce cost without reducing comfort. Track savings by comparing current schedule cost with optimized schedule cost.

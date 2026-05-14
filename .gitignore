@@ -1,0 +1,7 @@
+ecohome_solution/.venv/
+ecohome_solution/.pytest_cache/
+ecohome_solution/__pycache__/
+ecohome_solution/**/__pycache__/
+*.pyc
+.DS_Store
+ecohome_solution/.env

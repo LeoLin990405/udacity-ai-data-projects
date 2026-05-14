@@ -1,0 +1,2 @@
+HVAC optimization strategies:
+Pre-cool or pre-heat the home during low-price or high-solar hours before peak electricity periods. During hot afternoons, increase the thermostat setpoint by 2 to 4 degrees during price spikes if comfort allows. Use occupancy schedules and ceiling fans to reduce compressor runtime.

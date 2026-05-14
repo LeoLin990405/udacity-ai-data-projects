@@ -1,0 +1,2 @@
+Smart appliance scheduling best practices:
+Run dishwashers, laundry machines, and pool pumps during solar production windows or off-peak pricing periods. Avoid peak evening pricing unless the task is urgent. Use smart plugs or appliance delay-start features to align flexible loads with low-cost hours.

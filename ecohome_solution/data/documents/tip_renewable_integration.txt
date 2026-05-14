@@ -1,0 +1,2 @@
+Renewable energy integration:
+Maximize self-consumption by moving EV charging, water heating, laundry, and dishwashing into mid-day solar windows. If net metering export credits are low, self-consuming solar energy often creates more value than exporting surplus electricity.
