@@ -3,7 +3,7 @@
 Run this script from the project root after starting a local Cassandra instance.
 It mirrors the completed notebook workflow:
 
-1. Consolidate event CSV files into event_datafile_new.csv.
+1. Consolidate event CSV files into event_data_new.csv.
 2. Create a Cassandra keyspace.
 3. Create one table for each required analytics query.
 4. Insert data into the query-specific tables.
@@ -20,12 +20,12 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 EVENT_DATA_DIR = ROOT / "event_data"
-OUTPUT_FILE = ROOT / "event_datafile_new.csv"
+OUTPUT_FILE = ROOT / "event_data_new.csv"
 KEYSPACE = "sparkify"
 
 
 def preprocess_event_data() -> int:
-    """Create event_datafile_new.csv from the raw event_data CSV files."""
+    """Create event_data_new.csv from the raw event_data CSV files."""
 
     file_path_list: list[str] = []
     for root, _dirs, _files in os.walk(EVENT_DATA_DIR):
