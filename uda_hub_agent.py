@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Literal, TypedDict
+
+from database import DB_PATH, SupportTools, initialize_database
 
 try:
     from langgraph.graph import END, START, StateGraph
@@ -21,13 +22,15 @@ Route = Literal["resolve", "escalate"]
 
 class TicketState(TypedDict, total=False):
     ticket: Dict[str, Any]
+    ticket_id: str
     normalized_text: str
     category: str
     urgency: str
     confidence: float
+    knowledge_confidence: float
     route: Route
-    knowledge: List[str]
-    memory_matches: List[str]
+    knowledge: List[Dict[str, Any]]
+    memory_matches: List[Dict[str, Any]]
     tools_used: List[str]
     response: str
     escalation_summary: str
@@ -36,47 +39,14 @@ class TicketState(TypedDict, total=False):
     actions_taken: List[str]
 
 
-@dataclass
-class MemoryStore:
-    """Simple long-term memory keyed by customer id and category."""
-
-    records: Dict[str, List[str]] = field(default_factory=dict)
-
-    def add(self, customer_id: str, category: str, note: str) -> None:
-        key = f"{customer_id}:{category}"
-        self.records.setdefault(key, []).append(note)
-
-    def search(self, customer_id: str, category: str) -> List[str]:
-        return list(self.records.get(f"{customer_id}:{category}", []))
-
-
-@dataclass
-class KnowledgeBase:
-    path: Path
-    chunks: List[str] = field(init=False)
-
-    def __post_init__(self) -> None:
-        text = self.path.read_text(encoding="utf-8")
-        self.chunks = [chunk.strip() for chunk in text.split("## ") if chunk.strip()]
-
-    def search(self, query: str, limit: int = 2) -> List[str]:
-        terms = {t.strip(".,!?;:()[]").lower() for t in query.split() if len(t) > 2}
-        scored = []
-        for chunk in self.chunks:
-            lower = chunk.lower()
-            score = sum(1 for term in terms if term in lower)
-            if score:
-                scored.append((score, chunk))
-        scored.sort(key=lambda item: item[0], reverse=True)
-        return [chunk for _, chunk in scored[:limit]]
-
-
 class UDAHubAgent:
-    """Autonomous support agent with LangGraph orchestration and deterministic tools."""
+    """Autonomous support agent with LangGraph orchestration and database-backed tools."""
 
-    def __init__(self, knowledge_path: str = "data/faqs.md") -> None:
-        self.knowledge_base = KnowledgeBase(Path(knowledge_path))
-        self.memory = MemoryStore()
+    def __init__(self, db_path: str | Path = DB_PATH, initialize: bool = True) -> None:
+        self.db_path = Path(db_path)
+        if initialize:
+            initialize_database(self.db_path)
+        self.tools = SupportTools(self.db_path)
         self.graph = self._build_graph()
 
     def invoke(self, ticket: Dict[str, Any], thread_id: str = "default") -> TicketState:
@@ -144,7 +114,9 @@ class UDAHubAgent:
         confidence = 0.9 if category != "general" else 0.55
         route: Route = "escalate" if high_risk or confidence < 0.65 else "resolve"
         rationale = f"Classified as {category} with {urgency} urgency; route={route}."
+        ticket_id = self.tools.persist_ticket_and_message(metadata, category)
         return {
+            "ticket_id": ticket_id,
             "category": category,
             "urgency": urgency,
             "confidence": confidence,
@@ -155,14 +127,34 @@ class UDAHubAgent:
 
     def knowledge_agent(self, state: TicketState) -> TicketState:
         query = f"{state['category']} {state['normalized_text']}"
-        knowledge = self.knowledge_base.search(query)
         ticket = state["ticket"]
-        memory = self.memory.search(str(ticket.get("customer_id", "anonymous")), state["category"])
+        ticket_id = state.get("ticket_id")
+        knowledge_result = self.tools.search_knowledge(query, state["category"], ticket_id=ticket_id)
+        memory_result = self.tools.recall_customer_memory(
+            str(ticket.get("customer_id", "anonymous")),
+            state["category"],
+            ticket_id=ticket_id,
+        )
+        knowledge = knowledge_result.get("results", [])
+        memory = memory_result.get("memories", [])
+        knowledge_confidence = float(knowledge_result.get("confidence", 0.0))
+
+        route = state.get("route", "escalate")
+        rationale = state.get("rationale", "")
+        if knowledge_confidence < 0.25 or state["category"] == "general":
+            route = "escalate"
+            rationale += " Retrieval confidence or intent specificity is low, so a specialist should review."
+        elif memory and state["category"] in {"billing", "refund", "cancellation"}:
+            rationale += " Prior customer history was found and will personalize the response."
+
         return {
             "knowledge": knowledge,
             "memory_matches": memory,
-            "tools_used": state.get("tools_used", []) + ["search_knowledge_base", "recall_long_term_memory"],
-            "citations": [f"KB:{chunk.splitlines()[0]}" for chunk in knowledge],
+            "knowledge_confidence": knowledge_confidence,
+            "route": route,
+            "rationale": rationale,
+            "tools_used": state.get("tools_used", []) + ["search_knowledge", "recall_customer_memory"],
+            "citations": [f"KB-{item['knowledge_id']}:{item['title']}" for item in knowledge],
             "actions_taken": state.get("actions_taken", []) + ["knowledge"],
         }
 
@@ -172,44 +164,85 @@ class UDAHubAgent:
     def resolver_agent(self, state: TicketState) -> TicketState:
         category = state["category"]
         tools = list(state.get("tools_used", []))
+        ticket = state["ticket"]
+        ticket_id = state.get("ticket_id")
+        citations = ", ".join(state.get("citations", [])) or "retrieved support policy"
+        memory_note = ""
+        if state.get("memory_matches"):
+            memory_note = " I also considered the prior history for this customer."
+
         if category == "refund":
-            tools.append("refund_policy_check")
-            response = "Your request appears eligible for standard refund review. I verified the policy window and will start the refund workflow for the order on file."
+            validation = self.tools.validate_refund_request(ticket, ticket_id=ticket_id)
+            tools.append("validate_refund_request")
+            if validation.get("eligible"):
+                response = (
+                    "Your request appears eligible for standard refund review. "
+                    f"I checked the refund policy and customer account before preparing this response. Source: {citations}.{memory_note}"
+                )
+            else:
+                escalation = self.tools.create_escalation(ticket, category, "Refund tool validation failed", ticket_id=ticket_id)
+                tools.append("create_escalation")
+                return {
+                    "route": "escalate",
+                    "escalation_summary": str(escalation.get("summary")),
+                    "response": "I am escalating this refund request because it needs specialist validation.",
+                    "tools_used": tools,
+                    "actions_taken": state.get("actions_taken", []) + ["resolver"],
+                }
         elif category == "billing":
-            tools.append("invoice_lookup")
-            response = "I found the billing path for this request. We can resend the invoice to the billing email and route tax corrections to billing support if needed."
+            invoice = self.tools.lookup_invoice(ticket, ticket_id=ticket_id)
+            tools.append("lookup_invoice")
+            response = (
+                "I found the billing path for this request. "
+                f"The next safe action is {invoice.get('invoice_action', 'billing specialist review')}. Source: {citations}.{memory_note}"
+            )
         elif category == "cancellation":
-            tools.append("cancellation_workflow")
-            response = "I can help begin cancellation. Please confirm the account id and acknowledge the data retention policy before final closure."
+            account = self.tools.get_account_status(str(ticket.get("customer_id", "")), ticket_id=ticket_id)
+            tools.append("get_account_status")
+            response = (
+                "I can help begin cancellation. Please confirm the account id and acknowledge the data retention policy before final closure. "
+                f"Account status checked: {(account.get('account') or {}).get('status', 'unknown')}. Source: {citations}.{memory_note}"
+            )
         else:
-            response = "I found relevant support guidance and prepared a standard response."
+            response = f"I found relevant support guidance and prepared a standard response. Source: {citations}.{memory_note}"
         return {"response": response, "tools_used": tools, "actions_taken": state.get("actions_taken", []) + ["resolver"]}
 
     def escalation_agent(self, state: TicketState) -> TicketState:
         ticket = state["ticket"]
-        summary = (
-            f"Escalate {state['category']} ticket for customer {ticket.get('customer_id', 'unknown')}. "
-            f"Urgency={state['urgency']}. Reason: {state['rationale']} "
-            f"Customer text: {state['normalized_text']}"
+        escalation = self.tools.create_escalation(ticket, state["category"], state["rationale"], ticket_id=state.get("ticket_id"))
+        summary = str(escalation.get("summary"))
+        citation_text = ", ".join(state.get("citations", [])) or "support policy search"
+        response = (
+            "I am escalating this to a specialist with the relevant context so it can be handled safely and quickly. "
+            f"Source considered: {citation_text}."
         )
-        response = "I am escalating this to a specialist with the relevant context so it can be handled safely and quickly."
         return {
             "escalation_summary": summary,
             "response": response,
-            "tools_used": state.get("tools_used", []) + ["create_escalation_summary"],
+            "tools_used": state.get("tools_used", []) + ["create_escalation"],
             "actions_taken": state.get("actions_taken", []) + ["escalation"],
         }
 
     def memory_agent(self, state: TicketState) -> TicketState:
         ticket = state["ticket"]
-        note = f"{state['route']}:{state['category']}:{state['response']}"
-        self.memory.add(str(ticket.get("customer_id", "anonymous")), state["category"], note)
-        return {"actions_taken": state.get("actions_taken", []) + ["memory"]}
+        note = f"{state.get('route', 'unknown')}:{state['category']}:{state['response']}"
+        self.tools.add_customer_memory(
+            str(ticket.get("customer_id", "anonymous")),
+            state["category"],
+            note,
+            ticket_id=state.get("ticket_id"),
+        )
+        return {
+            "tools_used": state.get("tools_used", []) + ["add_customer_memory"],
+            "actions_taken": state.get("actions_taken", []) + ["memory"],
+        }
 
 
 def demo_tickets() -> List[Dict[str, Any]]:
     return [
-        {"customer_id": "C-100", "platform": "Zendesk", "urgency": "normal", "subject": "Refund request", "body": "I bought the annual plan last week and need a refund."},
-        {"customer_id": "C-200", "platform": "Intercom", "urgency": "critical", "subject": "Production outage", "body": "Our workspace is down and API calls return 503 errors."},
-        {"customer_id": "C-300", "platform": "Freshdesk", "urgency": "normal", "subject": "Need invoice", "body": "Please resend the April invoice to our billing email."},
+        {"ticket_id": "D-001", "customer_id": "C-100", "platform": "Zendesk", "urgency": "normal", "subject": "Refund request", "body": "I bought the annual plan last week and need a refund."},
+        {"ticket_id": "D-002", "customer_id": "C-200", "platform": "Intercom", "urgency": "critical", "subject": "Production outage", "body": "Our workspace is down and API calls return 503 errors."},
+        {"ticket_id": "D-003", "customer_id": "C-300", "platform": "Freshdesk", "urgency": "normal", "subject": "Need invoice", "body": "Please resend the April invoice to our billing email."},
+        {"ticket_id": "D-004", "customer_id": "C-400", "platform": "Email", "urgency": "normal", "subject": "Cancel account", "body": "Please cancel my account after I export my data."},
+        {"ticket_id": "D-005", "customer_id": "C-999", "platform": "Email", "urgency": "normal", "subject": "Need help", "body": "Something confusing happened and I am not sure what to do."},
     ]
