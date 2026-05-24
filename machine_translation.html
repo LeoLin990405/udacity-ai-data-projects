@@ -1,0 +1,1588 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Machine Translation</title><style>body{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;max-width:1100px;margin:40px auto;line-height:1.55;color:#1f2937}pre{background:#f6f8fa;padding:14px;border-radius:6px;overflow:auto}.cell{border-bottom:1px solid #e5e7eb;padding:18px 0}.out{background:#fff7ed;border-left:4px solid #f97316}code{background:#eef2f7;padding:1px 4px;border-radius:3px}</style></head><body><h1>Machine Translation Project</h1><div class="cell"><p><h1>Artificial Intelligence Nanodegree</h1>
+<h2>Machine Translation Project</h2>
+In this notebook, sections that end with <strong>'(IMPLEMENTATION)'</strong> in the header indicate that the following blocks of code will require additional functionality which you must provide. Please be sure to read the instructions carefully!</p><p><h2>Introduction</h2>
+In this notebook, you will build a deep neural network that functions as part of an end-to-end machine translation pipeline. Your completed pipeline will accept English text as input and return the French translation.</p><p>- <strong>Preprocess</strong> - You'll convert text to sequence of integers.
+- <strong>Models</strong> Create models which accepts a sequence of integers as input and returns a probability distribution over possible translations. After learning about the basic types of neural networks that are often used for machine translation, you will engage in your own investigations, to design your own model!
+- <strong>Prediction</strong> Run the model on English text.</p></div><div class="cell"><pre><code>%load_ext autoreload
+%aimport helper, tests
+%autoreload 1</code></pre></div><div class="cell"><pre><code>import collections
+
+import helper
+import numpy as np
+import project_tests as tests
+
+try:
+    from tensorflow.keras import Input, Sequential
+    from tensorflow.keras.preprocessing.text import Tokenizer
+    from tensorflow.keras.preprocessing.sequence import pad_sequences
+    from tensorflow.keras.models import Model
+    from tensorflow.keras.layers import GRU, Dense, TimeDistributed, Activation, RepeatVector, Bidirectional, LSTM, Embedding
+    from tensorflow.keras.optimizers import Adam
+    from tensorflow.keras.losses import sparse_categorical_crossentropy
+except ImportError:
+    from keras import Input, Sequential
+    from keras.preprocessing.text import Tokenizer
+    from keras.preprocessing.sequence import pad_sequences
+    from keras.models import Model
+    from keras.layers import GRU, Dense, TimeDistributed, Activation, RepeatVector, Bidirectional, LSTM, Embedding
+    from keras.optimizers import Adam
+    from keras.losses import sparse_categorical_crossentropy
+</code></pre><pre class="out">Using TensorFlow backend.
+</pre></div><div class="cell"><p><h3>Verify access to the GPU</h3>
+The following test applies only if you expect to be using a GPU, e.g., while running in a Udacity Workspace or using an AWS instance with GPU support. Run the next cell, and verify that the device_type is "GPU".
+- If the device is not GPU &amp; you are running from a Udacity Workspace, then save your workspace with the icon at the top, then click "enable" at the bottom of the workspace.
+- If the device is not GPU &amp; you are running from an AWS instance, then refer to the cloud computing instructions in the classroom to verify your setup steps.</p></div><div class="cell"><pre><code>from tensorflow.python.client import device_lib
+print(device_lib.list_local_devices())</code></pre><pre class="out">[name: "/device:CPU:0"
+device_type: "CPU"
+memory_limit: 268435456
+locality {
+}
+incarnation: 3866368574998311964
+, name: "/device:GPU:0"
+device_type: "GPU"
+memory_limit: 4828102656
+locality {
+  bus_id: 1
+  links {
+  }
+}
+incarnation: 17810517838333322114
+physical_device_desc: "device: 0, name: GeForce RTX 2060, pci bus id: 0000:01:00.0, compute capability: 7.5"
+]
+</pre></div><div class="cell"><p><h2>Dataset</h2>
+We begin by investigating the dataset that will be used to train and evaluate your pipeline.  The most common datasets used for machine translation are from [WMT](http://www.statmt.org/).  However, that will take a long time to train a neural network on.  We'll be using a dataset we created for this project that contains a small vocabulary.  You'll be able to train your model in a reasonable time with this dataset.
+<h3>Load Data</h3>
+The data is located in <code>data/small_vocab_en</code> and <code>data/small_vocab_fr</code>. The <code>small_vocab_en</code> file contains English sentences with their French translations in the <code>small_vocab_fr</code> file. Load the English and French data from these files from running the cell below.</p></div><div class="cell"><pre><code># Load English data
+english_sentences = helper.load_data('data/small_vocab_en')
+# Load French data
+french_sentences = helper.load_data('data/small_vocab_fr')
+
+print('Dataset Loaded')</code></pre><pre class="out">Dataset Loaded
+</pre></div><div class="cell"><p><h3>Files</h3>
+Each line in <code>small_vocab_en</code> contains an English sentence with the respective translation in each line of <code>small_vocab_fr</code>.  View the first two lines from each file.</p></div><div class="cell"><pre><code>for sample_i in range(2):
+    print('small_vocab_en Line {}:  {}'.format(sample_i + 1, english_sentences[sample_i]))
+    print('small_vocab_fr Line {}:  {}'.format(sample_i + 1, french_sentences[sample_i]))</code></pre><pre class="out">small_vocab_en Line 1:  new jersey is sometimes quiet during autumn , and it is snowy in april .
+small_vocab_fr Line 1:  new jersey est parfois calme pendant l' automne , et il est neigeux en avril .
+small_vocab_en Line 2:  the united states is usually chilly during july , and it is usually freezing in november .
+small_vocab_fr Line 2:  les Ã©tats-unis est gÃ©nÃ©ralement froid en juillet , et il gÃ¨le habituellement en novembre .
+</pre></div><div class="cell"><p>From looking at the sentences, you can see they have been preprocessed already.  The puncuations have been delimited using spaces. All the text have been converted to lowercase.  This should save you some time, but the text requires more preprocessing.
+<h3>Vocabulary</h3>
+The complexity of the problem is determined by the complexity of the vocabulary.  A more complex vocabulary is a more complex problem.  Let's look at the complexity of the dataset we'll be working with.</p></div><div class="cell"><pre><code>english_words_counter = collections.Counter([word for sentence in english_sentences for word in sentence.split()])
+french_words_counter = collections.Counter([word for sentence in french_sentences for word in sentence.split()])
+
+print('{} English words.'.format(len([word for sentence in english_sentences for word in sentence.split()])))
+print('{} unique English words.'.format(len(english_words_counter)))
+print('10 Most common words in the English dataset:')
+print('"' + '" "'.join(list(zip(*english_words_counter.most_common(10)))[0]) + '"')
+print()
+print('{} French words.'.format(len([word for sentence in french_sentences for word in sentence.split()])))
+print('{} unique French words.'.format(len(french_words_counter)))
+print('10 Most common words in the French dataset:')
+print('"' + '" "'.join(list(zip(*french_words_counter.most_common(10)))[0]) + '"')</code></pre><pre class="out">1823250 English words.
+227 unique English words.
+10 Most common words in the English dataset:
+"is" "," "." "in" "it" "during" "the" "but" "and" "sometimes"
+
+1961295 French words.
+355 unique French words.
+10 Most common words in the French dataset:
+"est" "." "," "en" "il" "les" "mais" "et" "la" "parfois"
+</pre></div><div class="cell"><p>For comparison, _Alice's Adventures in Wonderland_ contains 2,766 unique words of a total of 15,500 words.
+<h2>Preprocess</h2>
+For this project, you won't use text data as input to your model. Instead, you'll convert the text into sequences of integers using the following preprocess methods:
+1. Tokenize the words into ids
+2. Add padding to make all the sequences the same length.</p><p>Time to start preprocessing the data...
+<h3>Tokenize (IMPLEMENTATION)</h3>
+For a neural network to predict on text data, it first has to be turned into data it can understand. Text data like "dog" is a sequence of ASCII character encodings.  Since a neural network is a series of multiplication and addition operations, the input data needs to be number(s).</p><p>We can turn each character into a number or each word into a number.  These are called character and word ids, respectively.  Character ids are used for character level models that generate text predictions for each character.  A word level model uses word ids that generate text predictions for each word.  Word level models tend to learn better, since they are lower in complexity, so we'll use those.</p><p>Turn each sentence into a sequence of words ids using Keras's [<code>Tokenizer</code>](https://keras.io/preprocessing/text/#tokenizer) function. Use this function to tokenize <code>english_sentences</code> and <code>french_sentences</code> in the cell below.</p><p>Running the cell will run <code>tokenize</code> on sample data and show output for debugging.</p></div><div class="cell"><pre><code>def tokenize(x):
+    """
+    Tokenize x
+    :param x: List of sentences/strings to be tokenized
+    :return: Tuple of (tokenized x data, tokenizer used to tokenize x)
+    """
+    tokenizer = Tokenizer(split=' ', char_level=False)
+    tokenizer.fit_on_texts(x)
+    return tokenizer.texts_to_sequences(x), tokenizer           # texts_to_sequences_generator(), Yields individual sequences.
+
+tests.test_tokenize(tokenize)
+
+# Tokenize Example output
+text_sentences = [
+    'The quick brown fox jumps over the lazy dog .',
+    'By Jove , my quick study of lexicography won a prize .',
+    'This is a short sentence .']
+text_tokenized, text_tokenizer = tokenize(text_sentences)
+print(text_tokenizer.word_index)
+print()
+for sample_i, (sent, token_sent) in enumerate(zip(text_sentences, text_tokenized)):
+    print('Sequence {} in x'.format(sample_i + 1))
+    print('  Input:  {}'.format(sent))
+    print('  Output: {}'.format(token_sent))
+</code></pre><pre class="out">{'the': 1, 'quick': 2, 'a': 3, 'brown': 4, 'fox': 5, 'jumps': 6, 'over': 7, 'lazy': 8, 'dog': 9, 'by': 10, 'jove': 11, 'my': 12, 'study': 13, 'of': 14, 'lexicography': 15, 'won': 16, 'prize': 17, 'this': 18, 'is': 19, 'short': 20, 'sentence': 21}
+
+Sequence 1 in x
+  Input:  The quick brown fox jumps over the lazy dog .
+  Output: [1, 2, 4, 5, 6, 7, 1, 8, 9]
+Sequence 2 in x
+  Input:  By Jove , my quick study of lexicography won a prize .
+  Output: [10, 11, 12, 2, 13, 14, 15, 16, 3, 17]
+Sequence 3 in x
+  Input:  This is a short sentence .
+  Output: [18, 19, 3, 20, 21]
+</pre></div><div class="cell"><p><h3>Padding (IMPLEMENTATION)</h3>
+When batching the sequence of word ids together, each sequence needs to be the same length.  Since sentences are dynamic in length, we can add padding to the end of the sequences to make them the same length.</p><p>Make sure all the English sequences have the same length and all the French sequences have the same length by adding padding to the <strong>end</strong> of each sequence using Keras's [<code>pad_sequences</code>](https://keras.io/preprocessing/sequence/#pad_sequences) function.</p></div><div class="cell"><pre><code>text_tokenized</code></pre><pre class="out">[[1, 2, 4, 5, 6, 7, 1, 8, 9],
+ [10, 11, 12, 2, 13, 14, 15, 16, 3, 17],
+ [18, 19, 3, 20, 21]]</pre></div><div class="cell"><pre><code>def pad(x, length=None):
+    """
+    Pad x
+    :param x: List of sequences.
+    :param length: Length to pad the sequence to.  If None, use length of longest sequence in x.
+    :return: Padded numpy array of sequences
+    """
+    if length is None:
+        length = max([len(sentence) for sentence in x])
+    
+    return pad_sequences(x, maxlen=length, padding='post', truncating='post')
+
+tests.test_pad(pad)
+
+# Pad Tokenized output
+test_pad = pad(text_tokenized)
+for sample_i, (token_sent, pad_sent) in enumerate(zip(text_tokenized, test_pad)):
+    print('Sequence {} in x'.format(sample_i + 1))
+    print('  Input:  {}'.format(np.array(token_sent)))
+    print('  Output: {}'.format(pad_sent))
+</code></pre><pre class="out">Sequence 1 in x
+  Input:  [1 2 4 5 6 7 1 8 9]
+  Output: [1 2 4 5 6 7 1 8 9 0]
+Sequence 2 in x
+  Input:  [10 11 12  2 13 14 15 16  3 17]
+  Output: [10 11 12  2 13 14 15 16  3 17]
+Sequence 3 in x
+  Input:  [18 19  3 20 21]
+  Output: [18 19  3 20 21  0  0  0  0  0]
+</pre></div><div class="cell"><p><h3>Preprocess Pipeline</h3>
+Your focus for this project is to build neural network architecture, so we won't ask you to create a preprocess pipeline.  Instead, we've provided you with the implementation of the <code>preprocess</code> function.</p></div><div class="cell"><pre><code>def preprocess(x, y):
+    """
+    Preprocess x and y
+    :param x: Feature List of sentences
+    :param y: Label List of sentences
+    :return: Tuple of (Preprocessed x, Preprocessed y, x tokenizer, y tokenizer)
+    """
+    preprocess_x, x_tk = tokenize(x)
+    preprocess_y, y_tk = tokenize(y)
+
+    preprocess_x = pad(preprocess_x)
+    preprocess_y = pad(preprocess_y)
+
+    # Keras's sparse_categorical_crossentropy function requires the labels to be in 3 dimensions
+    preprocess_y = preprocess_y.reshape(*preprocess_y.shape, 1)
+
+    return preprocess_x, preprocess_y, x_tk, y_tk
+
+preproc_english_sentences, preproc_french_sentences, english_tokenizer, french_tokenizer =\
+    preprocess(english_sentences, french_sentences)
+    
+max_english_sequence_length = preproc_english_sentences.shape[1]
+max_french_sequence_length = preproc_french_sentences.shape[1]
+english_vocab_size = len(english_tokenizer.word_index) + 1
+french_vocab_size = len(french_tokenizer.word_index) + 1
+
+print('Data Preprocessed')
+print("Max English sentence length:", max_english_sequence_length)
+print("Max French sentence length:", max_french_sequence_length)
+print("English vocabulary size:", english_vocab_size)
+print("French vocabulary size:", french_vocab_size)
+</code></pre><pre class="out">Data Preprocessed
+Max English sentence length: 15
+Max French sentence length: 21
+English vocabulary size: 199
+French vocabulary size: 345
+</pre></div><div class="cell"><pre><code>print(type(preproc_english_sentences))
+print(preproc_english_sentences.shape)</code></pre><pre class="out">&lt;class 'numpy.ndarray'&gt;
+(137861, 15)
+</pre></div><div class="cell"><p><h2>Models</h2>
+In this section, you will experiment with various neural network architectures.
+You will begin by training four relatively simple architectures.
+- Model 1 is a simple RNN
+- Model 2 is a RNN with Embedding
+- Model 3 is a Bidirectional RNN
+- Model 4 is an optional Encoder-Decoder RNN</p><p>After experimenting with the four simple architectures, you will construct a deeper architecture that is designed to outperform all four models.
+<h3>Ids Back to Text</h3>
+The neural network will be translating the input to words ids, which isn't the final form we want.  We want the French translation.  The function <code>logits_to_text</code> will bridge the gab between the logits from the neural network to the French translation.  You'll be using this function to better understand the output of the neural network.</p></div><div class="cell"><pre><code>def logits_to_text(logits, tokenizer):
+    """
+    Turn logits from a neural network into text using the tokenizer
+    :param logits: Logits from a neural network
+    :param tokenizer: Keras Tokenizer fit on the labels
+    :return: String that represents the text of the logits
+    """
+    index_to_words = {id: word for word, id in tokenizer.word_index.items()}
+    index_to_words[0] = '&lt;PAD&gt;'
+
+    return ' '.join([index_to_words[prediction] for prediction in np.argmax(logits, 1) if index_to_words[prediction]!='&lt;PAD&gt;'] )
+
+print('`logits_to_text` function loaded.')</code></pre><pre class="out">`logits_to_text` function loaded.
+</pre></div><div class="cell"><p><h3>Model 1: RNN (IMPLEMENTATION)</h3>
+![RNN](images/rnn.png)
+A basic RNN model is a good baseline for sequence data.  In this model, you'll build a RNN that translates English to French.</p><p>#### Inputs/Outputs shape Basic RNN</p><p>- LSTM or GRU Input shape (batchsize, timesteps, 1). The timesteps is the length of the input sequences (15 for en, 21 for fr)
+- output shape LSTM (batchsize, timesteps, num_units) because Return_sequence activated to return the output at each timestep
+- Use of TimeDistributed wrapper over Dense(unitsoutput=target_vocab_size) to process each timestep
+- for each time step, Dense outputs a probability distribution over target_vocab to predict next word</p></div><div class="cell"><pre><code>def token_to_words(sequence, tokenizer):
+    index_to_words = {id: word for word, id in tokenizer.word_index.items()}
+    index_to_words[0] = '&lt;PAD&gt;'
+
+    return [index_to_words[token] for token in sequence if index_to_words[token]!='&lt;PAD&gt;']</code></pre></div><div class="cell"><pre><code>def simple_model(input_shape, output_sequence_length, english_vocab_size, french_vocab_size):
+    """
+    Build and train a basic RNN on x and y
+    :param input_shape: Tuple of input shape
+    :param output_sequence_length: Length of output sequence
+    :param english_vocab_size: Number of unique English words in the dataset
+    :param french_vocab_size: Number of unique French words in the dataset
+    :return: Keras model built, but not trained
+    """
+    learning_rate = 0.001
+    english_input = Input(shape=input_shape[1:], name="input_layer")    # the shape is (input length x 1) as batchsize excluded
+    
+    # LSTM takes as input (batchsize,input_length,1) and outputs (batchsize, input_length, 64) because return-seq=True
+    x = LSTM(64, return_sequences=True, activation="tanh", name="LSTM_layer")(english_input)
+    preds = TimeDistributed(Dense(french_vocab_size, activation="softmax"), name="Dense_layer")(x)
+    model = Model(inputs=english_input, outputs=preds, name='simple_LSTM')
+    
+    model.compile(loss=sparse_categorical_crossentropy,
+                  optimizer=Adam(learning_rate),
+                  metrics=['accuracy'])
+    
+    return model
+
+tests.test_simple_model(simple_model)
+
+# Reshaping the input to work with a basic RNN
+tmp_x = pad(preproc_english_sentences, max_french_sequence_length)
+tmp_x = tmp_x.reshape((-1, preproc_french_sentences.shape[-2], 1))  # reshape as 3D (batchsize, timesteps, 1) for LSTM input
+
+# Train the neural network
+simple_rnn_model = simple_model(
+    tmp_x.shape,
+    max_french_sequence_length,
+    english_vocab_size,
+    french_vocab_size)
+
+simple_rnn_model.summary()
+
+simple_rnn_model.fit(tmp_x, preproc_french_sentences, batch_size=1024, epochs=20, validation_split=0.2)
+</code></pre><pre class="out">_________________________________________________________________
+Layer (type)                 Output Shape              Param #   
+=================================================================
+input_layer (InputLayer)     (None, 21, 1)             0         
+_________________________________________________________________
+LSTM_layer (LSTM)            (None, 21, 64)            16896     
+_________________________________________________________________
+Dense_layer (TimeDistributed (None, 21, 345)           22425     
+=================================================================
+Total params: 39,321
+Trainable params: 39,321
+Non-trainable params: 0
+_________________________________________________________________
+Train on 110288 samples, validate on 27573 samples
+Epoch 1/20
+110288/110288 [==============================] - 9s 84us/step - loss: 3.4196 - acc: 0.4184 - val_loss: 2.5644 - val_acc: 0.4605
+Epoch 2/20
+110288/110288 [==============================] - 8s 69us/step - loss: 2.4462 - acc: 0.4693 - val_loss: 2.3099 - val_acc: 0.4826
+Epoch 3/20
+110288/110288 [==============================] - 8s 69us/step - loss: 2.1769 - acc: 0.5086 - val_loss: 2.0325 - val_acc: 0.5367
+Epoch 4/20
+110288/110288 [==============================] - 8s 69us/step - loss: 1.9290 - acc: 0.5504 - val_loss: 1.8386 - val_acc: 0.5639
+Epoch 5/20
+110288/110288 [==============================] - 8s 69us/step - loss: 1.7763 - acc: 0.5697 - val_loss: 1.7192 - val_acc: 0.5787
+Epoch 6/20
+110288/110288 [==============================] - 8s 69us/step - loss: 1.6761 - acc: 0.5895 - val_loss: 1.6357 - val_acc: 0.5965
+Epoch 7/20
+110288/110288 [==============================] - 8s 69us/step - loss: 1.6034 - acc: 0.5977 - val_loss: 1.5709 - val_acc: 0.6001
+Epoch 8/20
+110288/110288 [==============================] - 8s 68us/step - loss: 1.5442 - acc: 0.6021 - val_loss: 1.5162 - val_acc: 0.6118
+Epoch 9/20
+110288/110288 [==============================] - 8s 68us/step - loss: 1.4928 - acc: 0.6114 - val_loss: 1.4689 - val_acc: 0.6143
+Epoch 10/20
+110288/110288 [==============================] - 8s 69us/step - loss: 1.4487 - acc: 0.6199 - val_loss: 1.4280 - val_acc: 0.6231
+Epoch 11/20
+110288/110288 [==============================] - 8s 69us/step - loss: 1.4110 - acc: 0.6272 - val_loss: 1.3932 - val_acc: 0.6295
+Epoch 12/20
+110288/110288 [==============================] - 8s 69us/step - loss: 1.3784 - acc: 0.6323 - val_loss: 1.3625 - val_acc: 0.6332
+Epoch 13/20
+110288/110288 [==============================] - 8s 69us/step - loss: 1.3497 - acc: 0.6363 - val_loss: 1.3380 - val_acc: 0.6375
+Epoch 14/20
+110288/110288 [==============================] - 8s 69us/step - loss: 1.3243 - acc: 0.6407 - val_loss: 1.3111 - val_acc: 0.6427
+Epoch 15/20
+110288/110288 [==============================] - 8s 68us/step - loss: 1.3012 - acc: 0.6446 - val_loss: 1.2900 - val_acc: 0.6446
+Epoch 16/20
+110288/110288 [==============================] - 8s 69us/step - loss: 1.2808 - acc: 0.6462 - val_loss: 1.2711 - val_acc: 0.6465
+Epoch 17/20
+110288/110288 [==============================] - 8s 69us/step - loss: 1.2623 - acc: 0.6476 - val_loss: 1.2537 - val_acc: 0.6484
+Epoch 18/20
+110288/110288 [==============================] - 8s 69us/step - loss: 1.2459 - acc: 0.6496 - val_loss: 1.2382 - val_acc: 0.6499
+Epoch 19/20
+110288/110288 [==============================] - 8s 69us/step - loss: 1.2316 - acc: 0.6509 - val_loss: 1.2235 - val_acc: 0.6515
+Epoch 20/20
+110288/110288 [==============================] - 8s 69us/step - loss: 1.2174 - acc: 0.6527 - val_loss: 1.2101 - val_acc: 0.6532
+</pre><pre class="out">&lt;keras.callbacks.History at 0x7fb874224d30&gt;</pre></div><div class="cell"><pre><code>def translate(prediction, gold_standard):
+    
+    translation = logits_to_text(prediction[0], french_tokenizer)
+    standard = ' '.join(token_to_words(gold_standard[0][:,0],french_tokenizer)) 
+    print('---- Gold standard ----')
+    print(standard)
+    print()
+    print('---- Prediction ----')
+    for w_t, w_s in zip(translation.split(), standard.split()):
+        if w_t == w_s:
+            print('\033[0;30;0m','{}'.format(w_t), end='')
+        else:
+            print('\033[0;31;47m', w_t, end='')
+    print()</code></pre></div><div class="cell"><pre><code># Print prediction(s)
+print('---- Original ----')
+print(' '.join(token_to_words(tmp_x[:1][0][:,0],english_tokenizer) ))
+print()
+translate(simple_rnn_model.predict(tmp_x[:1]), preproc_french_sentences[:1])</code></pre><pre class="out">---- Original ----
+new jersey is sometimes quiet during autumn and it is snowy in april
+
+---- Gold standard ----
+new jersey est parfois calme pendant l' automne et il est neigeux en avril
+
+---- Prediction ----
+[0;30;0m new[0;30;0m jersey[0;30;0m est[0;30;0m parfois[0;30;0m calme[0;31;47m en[0;30;0m l'[0;31;47m et[0;31;47m il[0;31;47m est[0;30;0m est[0;31;47m en[0;30;0m en
+</pre></div><div class="cell"><p><h3>Model 2: Embedding (IMPLEMENTATION)</h3>
+![RNN](images/embedding.png)
+You've turned the words into ids, but there's a better representation of a word.  This is called word embeddings.  An embedding is a vector representation of the word that is close to similar words in n-dimensional space, where the n represents the size of the embedding vectors.</p><p>In this model, you'll create a RNN model using embedding.</p></div><div class="cell"><p>#### Inputs/Outputs shape embedding RNN
+- Input shape to Embedding layer (batchsize, input_length ie timesteps). the timesteps = length of the sequences
+- Input to the Embedding layer is vector of vocab_size for each token, converted into vector of embed_dim size
+- Embeddings output_shape is (None, sequence_length, embbed_dim). This is 3D expected by LSTM !
+- output shape LSTM (None, timesteps = sequence_length, num_units). Return_sequence activated to return output at each timestep
+- Use of TimeDistributed wrapper over Dense(target_vocab_size) to process each timestep
+- for each time step, Dense outputs a probability distribution over target_vocab to predict next word</p></div><div class="cell"><pre><code>def embed_model(input_shape, output_sequence_length, english_vocab_size, french_vocab_size):
+    """
+    Build and train a RNN model using word embedding on x and y
+    :param input_shape: Tuple of input shape
+    :param output_sequence_length: Length of output sequence
+    :param english_vocab_size: Number of unique English words in the dataset
+    :param french_vocab_size: Number of unique French words in the dataset
+    :return: Keras model built, but not trained
+    """
+    
+    learning_rate = 0.001
+    embedding_size = 256
+    
+    english_input = Input(shape=input_shape[1:], name="input_layer")   # Input shape (,seq_length)
+    
+    embeddings = Embedding(input_dim = english_vocab_size, output_dim = embedding_size, 
+                           input_length= output_sequence_length, name="Embedding_layer")(english_input)
+    
+    x = LSTM(64, return_sequences=True, activation="tanh", name="LSTM_layer")(embeddings)
+    
+    preds = TimeDistributed(Dense(french_vocab_size, activation="softmax"), name="Dense_layer")(x)
+    
+    model = Model(inputs=english_input, outputs=preds, name='Embedding_LSTM')
+    
+    model.compile(loss=sparse_categorical_crossentropy,
+                  optimizer=Adam(learning_rate),
+                  metrics=['accuracy'])
+    
+    return model
+
+tests.test_embed_model(embed_model)
+
+tmp_x = pad(preproc_english_sentences, max_french_sequence_length)
+tmp_x = tmp_x.reshape((-1, preproc_french_sentences.shape[-2]))    # reshaped to (batchsize, seq_length) for Embedding input
+
+# Train the neural network
+embed_rnn_model = embed_model(
+    tmp_x.shape,
+    max_french_sequence_length,
+    english_vocab_size,
+    french_vocab_size)
+
+embed_rnn_model.summary()
+    
+embed_rnn_model.fit(tmp_x, preproc_french_sentences, batch_size=1024, epochs=20, validation_split=0.2)
+</code></pre><pre class="out">_________________________________________________________________
+Layer (type)                 Output Shape              Param #   
+=================================================================
+input_layer (InputLayer)     (None, 21)                0         
+_________________________________________________________________
+Embedding_layer (Embedding)  (None, 21, 256)           51200     
+_________________________________________________________________
+LSTM_layer (LSTM)            (None, 21, 64)            82176     
+_________________________________________________________________
+Dense_layer (TimeDistributed (None, 21, 345)           22425     
+=================================================================
+Total params: 155,801
+Trainable params: 155,801
+Non-trainable params: 0
+_________________________________________________________________
+Train on 110288 samples, validate on 27573 samples
+Epoch 1/20
+110288/110288 [==============================] - 11s 101us/step - loss: 3.5813 - acc: 0.4027 - val_loss: 2.7548 - val_acc: 0.4216
+Epoch 2/20
+110288/110288 [==============================] - 10s 87us/step - loss: 2.4574 - acc: 0.4801 - val_loss: 2.0928 - val_acc: 0.5303
+Epoch 3/20
+110288/110288 [==============================] - 10s 87us/step - loss: 1.7801 - acc: 0.5890 - val_loss: 1.5157 - val_acc: 0.6394
+Epoch 4/20
+110288/110288 [==============================] - 9s 86us/step - loss: 1.3149 - acc: 0.6785 - val_loss: 1.1276 - val_acc: 0.7189
+Epoch 5/20
+110288/110288 [==============================] - 9s 86us/step - loss: 0.9937 - acc: 0.7492 - val_loss: 0.8809 - val_acc: 0.7737
+Epoch 6/20
+110288/110288 [==============================] - 10s 87us/step - loss: 0.8112 - acc: 0.7853 - val_loss: 0.7473 - val_acc: 0.7968
+Epoch 7/20
+110288/110288 [==============================] - 10s 87us/step - loss: 0.7056 - acc: 0.8055 - val_loss: 0.6636 - val_acc: 0.8141
+Epoch 8/20
+110288/110288 [==============================] - 10s 86us/step - loss: 0.6330 - acc: 0.8201 - val_loss: 0.6026 - val_acc: 0.8281
+Epoch 9/20
+110288/110288 [==============================] - 9s 86us/step - loss: 0.5781 - acc: 0.8326 - val_loss: 0.5516 - val_acc: 0.8397
+Epoch 10/20
+110288/110288 [==============================] - 10s 87us/step - loss: 0.5342 - acc: 0.8438 - val_loss: 0.5138 - val_acc: 0.8489
+Epoch 11/20
+110288/110288 [==============================] - 10s 88us/step - loss: 0.5007 - acc: 0.8525 - val_loss: 0.4848 - val_acc: 0.8561
+Epoch 12/20
+110288/110288 [==============================] - 10s 86us/step - loss: 0.4695 - acc: 0.8611 - val_loss: 0.4555 - val_acc: 0.8652
+Epoch 13/20
+110288/110288 [==============================] - 10s 86us/step - loss: 0.4449 - acc: 0.8678 - val_loss: 0.4341 - val_acc: 0.8701
+Epoch 14/20
+110288/110288 [==============================] - 10s 87us/step - loss: 0.4243 - acc: 0.8735 - val_loss: 0.4154 - val_acc: 0.8760
+Epoch 15/20
+110288/110288 [==============================] - 10s 86us/step - loss: 0.4048 - acc: 0.8791 - val_loss: 0.3977 - val_acc: 0.8811
+Epoch 16/20
+110288/110288 [==============================] - 10s 86us/step - loss: 0.3894 - acc: 0.8838 - val_loss: 0.3859 - val_acc: 0.8838
+Epoch 17/20
+110288/110288 [==============================] - 10s 86us/step - loss: 0.3752 - acc: 0.8880 - val_loss: 0.3704 - val_acc: 0.8885
+Epoch 18/20
+110288/110288 [==============================] - 9s 86us/step - loss: 0.3621 - acc: 0.8918 - val_loss: 0.3576 - val_acc: 0.8936
+Epoch 19/20
+110288/110288 [==============================] - 10s 87us/step - loss: 0.3504 - acc: 0.8950 - val_loss: 0.3453 - val_acc: 0.8962
+Epoch 20/20
+110288/110288 [==============================] - 9s 86us/step - loss: 0.3394 - acc: 0.8979 - val_loss: 0.3383 - val_acc: 0.8982
+</pre><pre class="out">&lt;keras.callbacks.History at 0x7fb8750f1d68&gt;</pre></div><div class="cell"><pre><code># Print prediction(s)
+print('---- Original ----')
+print(' '.join(token_to_words(tmp_x[:1][0],english_tokenizer) ))
+print()
+translate(embed_rnn_model.predict(tmp_x[:1]), preproc_french_sentences[:1])</code></pre><pre class="out">---- Original ----
+new jersey is sometimes quiet during autumn and it is snowy in april
+
+---- Gold standard ----
+new jersey est parfois calme pendant l' automne et il est neigeux en avril
+
+---- Prediction ----
+[0;30;0m new[0;30;0m jersey[0;30;0m est[0;30;0m parfois[0;30;0m calme[0;31;47m en[0;30;0m l'[0;31;47m et[0;31;47m il[0;31;47m est[0;30;0m est[0;30;0m neigeux[0;30;0m en[0;30;0m avril
+</pre></div><div class="cell"><p><h3>Model 3: Bidirectional RNNs (IMPLEMENTATION)</h3>
+![RNN](images/bidirectional.png)
+One restriction of a RNN is that it can't see the future input, only the past.  This is where bidirectional recurrent neural networks come in.  They are able to see the future data.</p></div><div class="cell"><p>#### Inputs/Outputs shape Bidirectional RNN
+- LSTM or GRU Input shape (batchsize, timesteps, 1). The timesteps is the length of the input sequences (15 for en, 21 for fr)
+- output shape Bidir-LSTM (None, timesteps = sequence_length, 2 x num_units) because both outputs are concatenated.
+- Return_sequence activated to return output at each timestep
+- Use of TimeDistributed wrapper over Dense(target_vocab_size) to process each timestep
+- for each time step, Dense outputs a probability distribution over target_vocab to predict next word</p></div><div class="cell"><pre><code>def bd_model(input_shape, output_sequence_length, english_vocab_size, french_vocab_size):
+    """
+    Build and train a bidirectional RNN model on x and y
+    :param input_shape: Tuple of input shape
+    :param output_sequence_length: Length of output sequence
+    :param english_vocab_size: Number of unique English words in the dataset
+    :param french_vocab_size: Number of unique French words in the dataset
+    :return: Keras model built, but not trained
+    """
+    
+    learning_rate = 0.001
+    embedding_size = 256
+    
+    english_input = Input(shape=input_shape[1:], name="input_layer")  # input to LSTM shape (batch, seq_length, 1)
+    
+    x = Bidirectional(LSTM(64, return_sequences=True, activation="tanh", name="Bidir_LSTM_layer"), input_shape=input_shape[1:])(english_input)
+    
+    preds = TimeDistributed(Dense(french_vocab_size, activation="softmax"), name="Dense_layer")(x)
+    
+    model = Model(inputs=english_input, outputs=preds, name='Bidir_LSTM')
+    
+    model.compile(loss=sparse_categorical_crossentropy,
+                  optimizer=Adam(learning_rate),
+                  metrics=['accuracy'])
+    
+    return model
+
+tests.test_bd_model(bd_model)
+
+tmp_x = pad(preproc_english_sentences, max_french_sequence_length)
+tmp_x = tmp_x.reshape((-1, preproc_french_sentences.shape[-2],1))  # reshape to (batch, seq_length, 1) for LSTM input
+
+# Train the neural network
+bd_rnn_model = bd_model(
+                        tmp_x.shape,
+                        max_french_sequence_length,
+                        english_vocab_size,
+                        french_vocab_size)
+
+bd_rnn_model.summary()
+    
+bd_rnn_model.fit(tmp_x, preproc_french_sentences, batch_size=1024, epochs=20, validation_split=0.2)
+</code></pre><pre class="out">_________________________________________________________________
+Layer (type)                 Output Shape              Param #   
+=================================================================
+input_16 (InputLayer)        (None, 21, 1)             0         
+_________________________________________________________________
+bidirectional_7 (Bidirection (None, 21, 128)           33792     
+_________________________________________________________________
+Dense_layer (TimeDistributed (None, 21, 345)           44505     
+=================================================================
+Total params: 78,297
+Trainable params: 78,297
+Non-trainable params: 0
+_________________________________________________________________
+Train on 110288 samples, validate on 27573 samples
+Epoch 1/20
+110288/110288 [==============================] - 14s 122us/step - loss: 3.2011 - acc: 0.4503 - val_loss: 2.1757 - val_acc: 0.5025
+Epoch 2/20
+110288/110288 [==============================] - 12s 108us/step - loss: 1.9134 - acc: 0.5493 - val_loss: 1.7154 - val_acc: 0.5757
+Epoch 3/20
+110288/110288 [==============================] - 12s 108us/step - loss: 1.6146 - acc: 0.5889 - val_loss: 1.5356 - val_acc: 0.6054
+Epoch 4/20
+110288/110288 [==============================] - 12s 107us/step - loss: 1.4832 - acc: 0.6115 - val_loss: 1.4358 - val_acc: 0.6202
+Epoch 5/20
+110288/110288 [==============================] - 12s 108us/step - loss: 1.3985 - acc: 0.6250 - val_loss: 1.3620 - val_acc: 0.6306
+Epoch 6/20
+110288/110288 [==============================] - 12s 109us/step - loss: 1.3338 - acc: 0.6342 - val_loss: 1.3078 - val_acc: 0.6370
+Epoch 7/20
+110288/110288 [==============================] - 12s 108us/step - loss: 1.2850 - acc: 0.6419 - val_loss: 1.2639 - val_acc: 0.6470
+Epoch 8/20
+110288/110288 [==============================] - 12s 107us/step - loss: 1.2472 - acc: 0.6494 - val_loss: 1.2313 - val_acc: 0.6540
+Epoch 9/20
+110288/110288 [==============================] - 12s 108us/step - loss: 1.2159 - acc: 0.6558 - val_loss: 1.2034 - val_acc: 0.6587
+Epoch 10/20
+110288/110288 [==============================] - 12s 108us/step - loss: 1.1893 - acc: 0.6602 - val_loss: 1.1765 - val_acc: 0.6620
+Epoch 11/20
+110288/110288 [==============================] - 12s 107us/step - loss: 1.1652 - acc: 0.6651 - val_loss: 1.1546 - val_acc: 0.6679
+Epoch 12/20
+110288/110288 [==============================] - 12s 108us/step - loss: 1.1423 - acc: 0.6684 - val_loss: 1.1324 - val_acc: 0.6705
+Epoch 13/20
+110288/110288 [==============================] - 12s 108us/step - loss: 1.1220 - acc: 0.6716 - val_loss: 1.1124 - val_acc: 0.6742
+Epoch 14/20
+110288/110288 [==============================] - 12s 107us/step - loss: 1.1024 - acc: 0.6747 - val_loss: 1.0944 - val_acc: 0.6760
+Epoch 15/20
+110288/110288 [==============================] - 12s 108us/step - loss: 1.0847 - acc: 0.6787 - val_loss: 1.0762 - val_acc: 0.6811
+Epoch 16/20
+110288/110288 [==============================] - 12s 108us/step - loss: 1.0688 - acc: 0.6813 - val_loss: 1.0624 - val_acc: 0.6818
+Epoch 17/20
+110288/110288 [==============================] - 12s 108us/step - loss: 1.0543 - acc: 0.6841 - val_loss: 1.0505 - val_acc: 0.6853
+Epoch 18/20
+110288/110288 [==============================] - 12s 108us/step - loss: 1.0411 - acc: 0.6860 - val_loss: 1.0370 - val_acc: 0.6864
+Epoch 19/20
+110288/110288 [==============================] - 12s 108us/step - loss: 1.0285 - acc: 0.6881 - val_loss: 1.0220 - val_acc: 0.6891
+Epoch 20/20
+110288/110288 [==============================] - 12s 108us/step - loss: 1.0167 - acc: 0.6903 - val_loss: 1.0123 - val_acc: 0.6909
+</pre><pre class="out">&lt;keras.callbacks.History at 0x7fb87675dbe0&gt;</pre></div><div class="cell"><pre><code># Print prediction(s)
+print('---- Original ----')
+print(' '.join(token_to_words(tmp_x[:1][0][:,0],english_tokenizer) ))
+print()
+translate(bd_rnn_model.predict(tmp_x[:1]), preproc_french_sentences[:1])</code></pre><pre class="out">---- Original ----
+new jersey is sometimes quiet during autumn and it is snowy in april
+
+---- Gold standard ----
+new jersey est parfois calme pendant l' automne et il est neigeux en avril
+
+---- Prediction ----
+[0;30;0m new[0;30;0m jersey[0;30;0m est[0;30;0m parfois[0;30;0m calme[0;31;47m en[0;30;0m l'[0;31;47m et[0;31;47m il[0;31;47m est[0;30;0m est[0;31;47m en[0;30;0m en
+</pre></div><div class="cell"><p><h3>Model 3 bis: Embedding Bidirectional RNNs (IMPLEMENTATION)</h3></p><p>#### Inputs/Outputs shape Embedding Bidirectional RNN
+- Embedding requires input shape (batchsize, input_length) and outputs (batchsize, input_length, embedded_dim)
+- this shape is OK for input to LSTM (3D)
+- LSTM or GRU Input shape (batchsize, timesteps, embedded_dim). Return_sequence activated to return output at each timestep
+- output shape Bidir-LSTM (None, timesteps = sequence_length, 2 x LSTM num_units) because both outputs are concatenated.
+- Use of TimeDistributed wrapper over Dense(target_vocab_size) to process each timestep
+- for each time step, Dense outputs a probability distribution over target_vocab to predict next word</p></div><div class="cell"><pre><code>def emb_bd_model(input_shape, output_sequence_length, english_vocab_size, french_vocab_size):
+    """
+    Build and train a bidirectional RNN model on x and y
+    :param input_shape: Tuple of input shape
+    :param output_sequence_length: Length of output sequence
+    :param english_vocab_size: Number of unique English words in the dataset
+    :param french_vocab_size: Number of unique French words in the dataset
+    :return: Keras model built, but not trained
+    """
+    
+    learning_rate = 0.001
+    embedding_size = 256
+    
+    english_input = Input(shape=input_shape[1:], name="input_layer")  # Embedding input (batch, seq_length)
+    
+    embeddings = Embedding(input_dim = english_vocab_size, output_dim = embedding_size, 
+                           input_length= output_sequence_length, name="Embedding_layer")(english_input)
+    
+    # input shape to LSTM (batchsize, seq_length, embedding_dim) output shape: (batchsize, seq_length, units=64x2)
+    x = Bidirectional(LSTM(64, return_sequences=True, activation="tanh"), name="Bidir_LSTM_layer")(embeddings)
+    
+    preds = TimeDistributed(Dense(french_vocab_size, activation="softmax"), name="Dense_layer")(x)
+    
+    model = Model(inputs=english_input, outputs=preds, name='Embedding_Bidir_LSTM')
+    
+    model.compile(loss=sparse_categorical_crossentropy,
+                  optimizer=Adam(learning_rate),
+                  metrics=['accuracy'])
+   
+    return model
+
+#tests.test_bd_model(bd_model)
+
+tmp_x = pad(preproc_english_sentences, max_french_sequence_length)
+tmp_x = tmp_x.reshape((-1, preproc_french_sentences.shape[-2]))    # reshapped for Embedding input (batch, seq_length)
+
+# Train the neural network
+emb_bd_rnn_model = emb_bd_model(
+                        tmp_x.shape,
+                        max_french_sequence_length,
+                        english_vocab_size,
+                        french_vocab_size)
+
+emb_bd_rnn_model.summary()
+
+emb_bd_rnn_model.fit(tmp_x, preproc_french_sentences, batch_size=1024, epochs=20, validation_split=0.2)
+</code></pre><pre class="out">_________________________________________________________________
+Layer (type)                 Output Shape              Param #   
+=================================================================
+input_layer (InputLayer)     (None, 21)                0         
+_________________________________________________________________
+Embedding_layer (Embedding)  (None, 21, 256)           51200     
+_________________________________________________________________
+Bidir_LSTM_layer (Bidirectio (None, 21, 128)           164352    
+_________________________________________________________________
+Dense_layer (TimeDistributed (None, 21, 345)           44505     
+=================================================================
+Total params: 260,057
+Trainable params: 260,057
+Non-trainable params: 0
+_________________________________________________________________
+Train on 110288 samples, validate on 27573 samples
+Epoch 1/20
+110288/110288 [==============================] - 16s 147us/step - loss: 3.1838 - acc: 0.4493 - val_loss: 2.3086 - val_acc: 0.5024
+Epoch 2/20
+110288/110288 [==============================] - 15s 140us/step - loss: 1.9231 - acc: 0.5514 - val_loss: 1.5676 - val_acc: 0.6169
+Epoch 3/20
+110288/110288 [==============================] - 15s 140us/step - loss: 1.2851 - acc: 0.6733 - val_loss: 1.0448 - val_acc: 0.7259
+Epoch 4/20
+110288/110288 [==============================] - 15s 140us/step - loss: 0.9042 - acc: 0.7582 - val_loss: 0.7910 - val_acc: 0.7809
+Epoch 5/20
+110288/110288 [==============================] - 16s 141us/step - loss: 0.7210 - acc: 0.7979 - val_loss: 0.6566 - val_acc: 0.8135
+Epoch 6/20
+110288/110288 [==============================] - 15s 140us/step - loss: 0.6096 - acc: 0.8245 - val_loss: 0.5632 - val_acc: 0.8367
+Epoch 7/20
+110288/110288 [==============================] - 15s 140us/step - loss: 0.5296 - acc: 0.8470 - val_loss: 0.5010 - val_acc: 0.8564
+Epoch 8/20
+110288/110288 [==============================] - 15s 140us/step - loss: 0.4720 - acc: 0.8639 - val_loss: 0.4467 - val_acc: 0.8713
+Epoch 9/20
+110288/110288 [==============================] - 15s 140us/step - loss: 0.4270 - acc: 0.8765 - val_loss: 0.4087 - val_acc: 0.8815
+Epoch 10/20
+110288/110288 [==============================] - 15s 140us/step - loss: 0.3924 - acc: 0.8860 - val_loss: 0.3770 - val_acc: 0.8901
+Epoch 11/20
+110288/110288 [==============================] - 16s 141us/step - loss: 0.3632 - acc: 0.8945 - val_loss: 0.3538 - val_acc: 0.8963
+Epoch 12/20
+110288/110288 [==============================] - 16s 141us/step - loss: 0.3383 - acc: 0.9020 - val_loss: 0.3285 - val_acc: 0.9056
+Epoch 13/20
+110288/110288 [==============================] - 16s 141us/step - loss: 0.3168 - acc: 0.9089 - val_loss: 0.3133 - val_acc: 0.9100
+Epoch 14/20
+110288/110288 [==============================] - 15s 140us/step - loss: 0.2976 - acc: 0.9147 - val_loss: 0.2935 - val_acc: 0.9159
+Epoch 15/20
+110288/110288 [==============================] - 16s 141us/step - loss: 0.2824 - acc: 0.9191 - val_loss: 0.2776 - val_acc: 0.9207
+Epoch 16/20
+110288/110288 [==============================] - 16s 141us/step - loss: 0.2672 - acc: 0.9238 - val_loss: 0.2663 - val_acc: 0.9244
+Epoch 17/20
+110288/110288 [==============================] - 16s 141us/step - loss: 0.2552 - acc: 0.9272 - val_loss: 0.2535 - val_acc: 0.9284
+Epoch 18/20
+110288/110288 [==============================] - 16s 141us/step - loss: 0.2429 - acc: 0.9311 - val_loss: 0.2424 - val_acc: 0.9310
+Epoch 19/20
+110288/110288 [==============================] - 16s 142us/step - loss: 0.2324 - acc: 0.9339 - val_loss: 0.2362 - val_acc: 0.9320
+Epoch 20/20
+110288/110288 [==============================] - 16s 142us/step - loss: 0.2224 - acc: 0.9370 - val_loss: 0.2253 - val_acc: 0.9359
+</pre><pre class="out">&lt;keras.callbacks.History at 0x7fb67cc782e8&gt;</pre></div><div class="cell"><pre><code># Print prediction(s)
+print('---- Original ----')
+print(' '.join(token_to_words(tmp_x[:1][0],english_tokenizer) ))
+print()
+translate(emb_bd_rnn_model.predict(tmp_x[:1]), preproc_french_sentences[:1])</code></pre><pre class="out">---- Original ----
+new jersey is sometimes quiet during autumn and it is snowy in april
+
+---- Gold standard ----
+new jersey est parfois calme pendant l' automne et il est neigeux en avril
+
+---- Prediction ----
+[0;30;0m new[0;30;0m jersey[0;30;0m est[0;30;0m parfois[0;30;0m calme[0;31;47m au[0;30;0m l'[0;30;0m automne[0;31;47m il[0;31;47m et[0;30;0m est[0;30;0m neigeux[0;30;0m en[0;30;0m avril
+</pre></div><div class="cell"><p><h2>Model 4: Encoder-Decoder (OPTIONAL)</h2>
+Time to look at encoder-decoder models.  This model is made up of an encoder and decoder. The encoder creates a matrix representation of the sentence.  The decoder takes this matrix as input and predicts the translation as output.</p><p>Create an encoder-decoder model in the cell below.</p></div><div class="cell"><p><h3>LSTM Encoder-Decoder Architectures using RepeatVector</h3></p><p>https://machinelearningmastery.com/encoder-decoder-long-short-term-memory-networks/</p><p>https://machinelearningmastery.com/configure-encoder-decoder-model-neural-machine-translation/</p><p>- Encoder: One or more LSTM layers can be used to implement the encoder model. The output of this model is a fixed-size vector that represents the internal representation of the input sequence. The number of memory cells in this layer defines the length of this fixed-sized vector.</p><p>- Decoder: The decoder must transform the learned internal representation of the input sequence into the correct output sequence. One or more LSTM layers can also be used to implement the decoder model. This model reads from the fixed sized output from the encoder model.</p><p><strong>Issue</strong>: We must connect the encoder to the decoder, and they do not fit. That is, the encoder will produce a 2-dimensional matrix of outputs, where the length is defined by the number of memory cells in the layer. The decoder is an LSTM layer that expects a 3D input of [samples, time steps, features] in order to produce a decoded sequence of some different length defined by the problem.</p><p>We can solve this using a <code>RepeatVector</code> layer. This layer simply repeats the provided 2D input multiple times to create a 3D output. The RepeatVector layer can be used like an adapter to fit the encoder and decoder parts of the network together. We can configure the RepeatVector to repeat the fixed length vector one time for each time step in the output sequence.</p></div><div class="cell"><p>#### Simplified LSTM Encoder Decoder using recommended structure
+- https://machinelearningmastery.com/configure-encoder-decoder-model-neural-machine-translation/
+- Encoder: Bidirectional (2 units)
+- Decoder: 2 units</p></div><div class="cell"><pre><code>def encdec_model2(input_shape, output_sequence_length, english_vocab_size, french_vocab_size):
+    """
+    Build and train an encoder-decoder model on x and y
+    :param input_shape: Tuple of input shape
+    :param output_sequence_length: Length of output sequence
+    :param english_vocab_size: Number of unique English words in the dataset
+    :param french_vocab_size: Number of unique French words in the dataset
+    :return: Keras model built, but not trained
+    """
+    # OPTIONAL: Implement
+    
+    learning_rate = 0.001
+    embedding_size = 300
+    num_units = 256
+    
+    ########### ENCODER ###########
+    encoder_input = Input(shape=input_shape[1:], name="input_Encoder")
+    
+    embeddings = Embedding(input_dim = english_vocab_size, output_dim = embedding_size, 
+                           input_length= input_shape[1], name="Embedding_layer")(encoder_input)
+    
+    encoder_output = Bidirectional(LSTM(num_units, return_sequences=False, activation="relu"), name="Bidir_Encoder")(embeddings)
+    # output shape of decoder = (batch , num_units)
+    
+    ########### INTERMEDIARY ###########
+    # This adjusts the shape of the Encoder output (2D) to the need of the Decoder (3D input).
+    # We repeat the 2D vector over sequence_length times to produce the shape (batchsize, seq_length, LSTM units)
+    input_decoder = RepeatVector(output_sequence_length)(encoder_output)
+    
+    ########### DECODER ###########
+    decoder_input = Input(shape=input_decoder.shape[:1], name="input_Decoder")
+    
+    x = LSTM(num_units, return_sequences=True, activation="relu", name="LSTM_layer1")(input_decoder)
+    x = LSTM(num_units, return_sequences=True, activation="relu", name="LSTM_layer2")(x)
+    
+    preds = TimeDistributed(Dense(french_vocab_size, activation="softmax"), name="Dense_layer")(x)
+
+    ########### END-TO-END MODEL ###########
+    model = Model(inputs=encoder_input, outputs=preds, name='Encdec')
+    
+    model.compile(loss=sparse_categorical_crossentropy,
+                  optimizer=Adam(learning_rate),
+                  metrics=['accuracy'])
+    
+    return model
+
+#tests.test_encdec_model(encdec_model2) # commented out to avoid error: english sequences padded to french sequence max length
+
+# OPTIONAL: Train and Print prediction(s)
+
+tmp_x = pad(preproc_english_sentences, max_french_sequence_length)
+tmp_x = tmp_x.reshape((-1, preproc_french_sentences.shape[-2]))   # reshape for embedding input
+
+# Train the neural network
+enc_dec_model2 = encdec_model2(
+                        tmp_x.shape,
+                        max_french_sequence_length,
+                        english_vocab_size,
+                        french_vocab_size)
+
+enc_dec_model2.summary()
+
+enc_dec_model2.fit(tmp_x, preproc_french_sentences, batch_size=1024, epochs=15, validation_split=0.2)
+</code></pre><pre class="out">_________________________________________________________________
+Layer (type)                 Output Shape              Param #   
+=================================================================
+input_Encoder (InputLayer)   (None, 21)                0         
+_________________________________________________________________
+Embedding_layer (Embedding)  (None, 21, 300)           59700     
+_________________________________________________________________
+Bidir_Encoder (Bidirectional (None, 512)               1140736   
+_________________________________________________________________
+repeat_vector_1 (RepeatVecto (None, 21, 512)           0         
+_________________________________________________________________
+LSTM_layer1 (LSTM)           (None, 21, 256)           787456    
+_________________________________________________________________
+LSTM_layer2 (LSTM)           (None, 21, 256)           525312    
+_________________________________________________________________
+Dense_layer (TimeDistributed (None, 21, 344)           88408     
+=================================================================
+Total params: 2,601,612
+Trainable params: 2,601,612
+Non-trainable params: 0
+_________________________________________________________________
+Train on 110288 samples, validate on 27573 samples
+Epoch 1/15
+110288/110288 [==============================] - 55s 495us/step - loss: 2.9942 - acc: 0.4531 - val_loss: nan - val_acc: 0.5209
+Epoch 2/15
+110288/110288 [==============================] - 53s 483us/step - loss: 1.7983 - acc: 0.5600 - val_loss: nan - val_acc: 0.5741
+Epoch 3/15
+110288/110288 [==============================] - 53s 484us/step - loss: 1.2879 - acc: 0.6337 - val_loss: nan - val_acc: 0.6750
+Epoch 4/15
+110288/110288 [==============================] - 53s 483us/step - loss: 1.0508 - acc: 0.6926 - val_loss: nan - val_acc: 0.7181
+Epoch 5/15
+110288/110288 [==============================] - 53s 484us/step - loss: 0.8329 - acc: 0.7446 - val_loss: nan - val_acc: 0.7696
+Epoch 6/15
+110288/110288 [==============================] - 53s 484us/step - loss: 0.6935 - acc: 0.7837 - val_loss: nan - val_acc: 0.7990
+Epoch 7/15
+110288/110288 [==============================] - 53s 484us/step - loss: 0.5626 - acc: 0.8208 - val_loss: nan - val_acc: 0.8308
+Epoch 8/15
+110288/110288 [==============================] - 53s 484us/step - loss: 0.4743 - acc: 0.8462 - val_loss: nan - val_acc: 0.8620
+Epoch 9/15
+110288/110288 [==============================] - 53s 484us/step - loss: 0.3979 - acc: 0.8694 - val_loss: nan - val_acc: 0.8713
+Epoch 10/15
+110288/110288 [==============================] - 53s 485us/step - loss: 0.3270 - acc: 0.8931 - val_loss: nan - val_acc: 0.8949
+Epoch 11/15
+110288/110288 [==============================] - 53s 484us/step - loss: 0.2622 - acc: 0.9156 - val_loss: nan - val_acc: 0.9269
+Epoch 12/15
+110288/110288 [==============================] - 53s 485us/step - loss: 0.2185 - acc: 0.9307 - val_loss: nan - val_acc: 0.9378
+Epoch 13/15
+110288/110288 [==============================] - 53s 484us/step - loss: 0.1984 - acc: 0.9373 - val_loss: nan - val_acc: 0.9443
+Epoch 14/15
+110288/110288 [==============================] - 53s 484us/step - loss: 0.1545 - acc: 0.9517 - val_loss: nan - val_acc: 0.9524
+Epoch 15/15
+110288/110288 [==============================] - 53s 485us/step - loss: 0.1413 - acc: 0.9558 - val_loss: nan - val_acc: 0.9546
+</pre><pre class="out">&lt;keras.callbacks.History at 0x7f3a5e34a588&gt;</pre></div><div class="cell"><pre><code>print('---- Original ----')
+print(' '.join(token_to_words(tmp_x[:1][0],english_tokenizer) ))
+print()
+translate(enc_dec_model2.predict(tmp_x[:1]), preproc_french_sentences[:1])</code></pre><pre class="out">---- Original ----
+new jersey is sometimes quiet during autumn and it is snowy in april
+
+---- Gold standard ----
+new jersey est parfois calme pendant l' automne et il est neigeux en avril
+
+---- Prediction ----
+[0;30;0m new[0;30;0m jersey[0;30;0m est[0;30;0m parfois[0;30;0m calme[0;30;0m pendant[0;30;0m l'[0;31;47m et[0;30;0m et[0;30;0m il[0;30;0m est[0;31;47m en[0;30;0m en[0;30;0m avril
+</pre></div><div class="cell"><p><h3>Savings weights of Encoder Decoder model</h3></p></div><div class="cell"><pre><code># Save the weights
+enc_dec_model2.save_weights('model_encdec_LSTM')
+
+# Create a new model instance
+#model = create_model()
+
+# Restore the weights
+#model.load_weights('./saved_model/final_model_3')
+
+# Save the entire model as a SavedModel.
+!mkdir -p saved_model
+enc_dec_model2.save('saved_model/model_encdec_LSTM_full')
+
+# load saved model
+#model = tf.keras.models.load_model('saved_model/my_model')
+
+# Check its architecture
+#model.summary()</code></pre></div><div class="cell"><p><h3>LSTM with higher number of units</h3>
+- Better results vs shallower version above but requires significantly more training</p></div><div class="cell"><pre><code>def encdec_model3(input_shape, output_sequence_length, english_vocab_size, french_vocab_size):
+    """
+    Build and train an encoder-decoder model on x and y
+    :param input_shape: Tuple of input shape
+    :param output_sequence_length: Length of output sequence
+    :param english_vocab_size: Number of unique English words in the dataset
+    :param french_vocab_size: Number of unique French words in the dataset
+    :return: Keras model built, but not trained
+    """
+    # OPTIONAL: Implement
+    
+    learning_rate = 0.001
+    embedding_size = 300
+    num_units = 256
+    
+    ########### ENCODER ###########
+    model = Sequential(name='Encdec')
+    
+    # Embedding layer - Input shape (batch_size, seq_length)
+    
+    model.add(Embedding(input_dim = english_vocab_size, output_dim = embedding_size, 
+                           input_length= input_shape[1], name="Embedding_layer"))
+    
+    # Bidirectional LSTM : unit shape (batch, seq_length, embedding_size), output shape of decoder = (batch , num_unitsx2)
+    model.add(Bidirectional(LSTM(num_units, return_sequences=False, activation="relu"),input_shape=input_shape[1:], name="Bidir_Encoder"))
+        
+    ########### INTERMEDIARY ###########
+    # This adjusts the shape of the Encoder output (2D) to the need of the Decoder (3D input).
+    # We repeat the 2D vector over sequence_length times to produce the shape (batchsize, seq_length, LSTM unitsx2)
+    model.add(RepeatVector(output_sequence_length))
+    
+    ########### DECODER ###########
+    # Depth 2 LSTM layers input=(batch,seq_len,LSTM_unitsx2) =&gt; output shape identical due to return_seq and LSTM units
+    model.add(LSTM(num_units*2, return_sequences=True, activation="relu", name="LSTM_layer1"))
+    model.add(LSTM(num_units*2, return_sequences=True, activation="relu", name="LSTM_layer2"))
+    
+    model.add(TimeDistributed(Dense(french_vocab_size, activation="softmax"), name="Dense_layer"))
+
+    ########### END-TO-END MODEL ###########
+    model.compile(loss=sparse_categorical_crossentropy,
+                  optimizer=Adam(learning_rate),
+                  metrics=['accuracy'])
+    
+    return model
+
+#tests.test_encdec_model(encdec_model3) # commented out to avoid error: english sequences padded to french sequence max length
+
+# OPTIONAL: Train and Print prediction(s)
+
+tmp_x = pad(preproc_english_sentences, max_french_sequence_length)
+tmp_x = tmp_x.reshape((-1, preproc_french_sentences.shape[-2]))   # reshape for embedding input
+
+# Train the neural network
+enc_dec_model3 = encdec_model3(
+                        tmp_x.shape,
+                        max_french_sequence_length,
+                        english_vocab_size,
+                        french_vocab_size)
+
+enc_dec_model3.summary()
+
+enc_dec_model3.fit(tmp_x, preproc_french_sentences, batch_size=1024, epochs=22, validation_split=0.2)
+</code></pre><pre class="out">_________________________________________________________________
+Layer (type)                 Output Shape              Param #   
+=================================================================
+Embedding_layer (Embedding)  (None, 21, 300)           59700     
+_________________________________________________________________
+Bidir_Encoder (Bidirectional (None, 512)               1140736   
+_________________________________________________________________
+repeat_vector_3 (RepeatVecto (None, 21, 512)           0         
+_________________________________________________________________
+LSTM_layer1 (LSTM)           (None, 21, 512)           2099200   
+_________________________________________________________________
+LSTM_layer2 (LSTM)           (None, 21, 512)           2099200   
+_________________________________________________________________
+Dense_layer (TimeDistributed (None, 21, 344)           176472    
+=================================================================
+Total params: 5,575,308
+Trainable params: 5,575,308
+Non-trainable params: 0
+_________________________________________________________________
+Train on 110288 samples, validate on 27573 samples
+Epoch 1/22
+110288/110288 [==============================] - 85s 770us/step - loss: 2.9756 - acc: 0.4451 - val_loss: nan - val_acc: 0.5211
+Epoch 2/22
+110288/110288 [==============================] - 84s 759us/step - loss: 1.7196 - acc: 0.5687 - val_loss: nan - val_acc: 0.6243
+Epoch 3/22
+110288/110288 [==============================] - 83s 757us/step - loss: 1.2014 - acc: 0.6530 - val_loss: nan - val_acc: 0.6835
+Epoch 4/22
+110288/110288 [==============================] - 83s 756us/step - loss: 0.9443 - acc: 0.7140 - val_loss: nan - val_acc: 0.7432
+Epoch 5/22
+110288/110288 [==============================] - 83s 755us/step - loss: 0.7674 - acc: 0.7561 - val_loss: nan - val_acc: 0.7797
+Epoch 6/22
+110288/110288 [==============================] - 83s 756us/step - loss: 0.6141 - acc: 0.7973 - val_loss: nan - val_acc: 0.8221
+Epoch 7/22
+110288/110288 [==============================] - 83s 756us/step - loss: 0.4843 - acc: 0.8402 - val_loss: nan - val_acc: 0.8615
+Epoch 8/22
+110288/110288 [==============================] - 83s 756us/step - loss: 0.3730 - acc: 0.8784 - val_loss: nan - val_acc: 0.8945
+Epoch 9/22
+110288/110288 [==============================] - 83s 756us/step - loss: 0.2952 - acc: 0.9044 - val_loss: nan - val_acc: 0.9188
+Epoch 10/22
+110288/110288 [==============================] - 83s 755us/step - loss: 0.2220 - acc: 0.9297 - val_loss: nan - val_acc: 0.9317
+Epoch 11/22
+110288/110288 [==============================] - 83s 755us/step - loss: 0.2126 - acc: 0.9334 - val_loss: nan - val_acc: 0.9467
+Epoch 12/22
+110288/110288 [==============================] - 83s 756us/step - loss: 0.1521 - acc: 0.9526 - val_loss: nan - val_acc: 0.9474
+Epoch 13/22
+110288/110288 [==============================] - 83s 752us/step - loss: 0.1413 - acc: 0.9556 - val_loss: nan - val_acc: 0.9527
+Epoch 14/22
+110288/110288 [==============================] - 83s 753us/step - loss: 0.1212 - acc: 0.9623 - val_loss: nan - val_acc: 0.9614
+Epoch 15/22
+110288/110288 [==============================] - 83s 754us/step - loss: 0.1076 - acc: 0.9666 - val_loss: nan - val_acc: 0.9658
+Epoch 16/22
+110288/110288 [==============================] - 83s 755us/step - loss: 0.0963 - acc: 0.9705 - val_loss: nan - val_acc: 0.9654
+Epoch 17/22
+110288/110288 [==============================] - 83s 754us/step - loss: 0.0946 - acc: 0.9708 - val_loss: nan - val_acc: 0.9651
+Epoch 18/22
+110288/110288 [==============================] - 83s 755us/step - loss: 0.0880 - acc: 0.9730 - val_loss: nan - val_acc: 0.9709
+Epoch 19/22
+110288/110288 [==============================] - 83s 755us/step - loss: 0.0804 - acc: 0.9755 - val_loss: nan - val_acc: 0.9707
+Epoch 20/22
+110288/110288 [==============================] - 83s 756us/step - loss: 0.0872 - acc: 0.9739 - val_loss: nan - val_acc: 0.9720
+Epoch 21/22
+110288/110288 [==============================] - 83s 755us/step - loss: 0.0705 - acc: 0.9788 - val_loss: nan - val_acc: 0.9732
+Epoch 22/22
+110288/110288 [==============================] - 83s 755us/step - loss: 0.0641 - acc: 0.9810 - val_loss: nan - val_acc: 0.9519
+</pre><pre class="out">&lt;keras.callbacks.History at 0x7f3a160d0ba8&gt;</pre></div><div class="cell"><pre><code>print('---- Original ----')
+print(' '.join(token_to_words(tmp_x[:1][0],english_tokenizer) ))
+print()
+translate(enc_dec_model3.predict(tmp_x[:1]), preproc_french_sentences[:1])</code></pre><pre class="out">---- Original ----
+new jersey is sometimes quiet during autumn and it is snowy in april
+
+---- Gold standard ----
+new jersey est parfois calme pendant l' automne et il est neigeux en avril
+
+---- Prediction ----
+[0;30;0m new[0;30;0m jersey[0;30;0m est[0;30;0m parfois[0;30;0m calme[0;30;0m pendant[0;30;0m l'[0;30;0m automne[0;30;0m et[0;30;0m il[0;30;0m est[0;30;0m neigeux[0;30;0m en[0;30;0m avril
+</pre></div><div class="cell"><p><h3>Savings weights of Encoder Decoder model</h3></p></div><div class="cell"><pre><code># Save the weights
+enc_dec_model3.save_weights('final_model_encdec')
+
+# Save the entire model as a SavedModel.
+!mkdir -p saved_model
+enc_dec_model3.save('saved_model/final_model_encdec_full')</code></pre></div><div class="cell"><p><h2>Encoder Decoder model with GRU RNN</h2>
+- No bidirectional unit
+- 1 layer depth for both encoder and decoder
+- Much less parameters compared to LSTM</p></div><div class="cell"><pre><code>def encdec_model4(input_shape, output_sequence_length, english_vocab_size, french_vocab_size):
+    """
+    Build and train an encoder-decoder model on x and y
+    :param input_shape: Tuple of input shape
+    :param output_sequence_length: Length of output sequence
+    :param english_vocab_size: Number of unique English words in the dataset
+    :param french_vocab_size: Number of unique French words in the dataset
+    :return: Keras model built, but not trained
+    """
+    # OPTIONAL: Implement
+    
+    learning_rate = 0.001
+    embedding_size = 256
+    num_units = 256
+    
+    model = Sequential(name='enc_dec_model4')
+    
+    ########### ENCODER ###########
+    # Embedding layer - Input shape (batch_size, seq_length)
+    model.add(Embedding(input_dim = english_vocab_size, output_dim = embedding_size, 
+                           input_length= input_shape[1], name="Embedding_layer"))
+    
+    # Expected shape for GRU layer input : (batchsize, Seq_length, embedding_size)
+    model.add(GRU(num_units, go_backwards=True, name='GRU_encoder'))
+    # output shape of decoder = (batch , num_units)
+    
+    ########### INTERMEDIARY ###########
+    # This adjusts the shape of the Encoder output (2D) to the need of the Decoder (3D input).
+    # We repeat the 2D vector over sequence_length times to produce the shape (batchsize, seq_length, num_units)
+    model.add(RepeatVector(output_sequence_length, name='Glue'))
+    # output shape of glue intermediary step = (batch , seq_length, num_units) compatible with expected input for Decoder GRU  
+    
+    ########### DECODER ###########
+       
+    model.add(GRU(num_units, return_sequences=True, name='GRU_decoder'))
+    
+    model.add(TimeDistributed(Dense(french_vocab_size), name='Dense'))
+    
+    model.add(Activation('softmax', name='softmax'))
+    # output shape of decoder = (batch , french_vocab_size) probability distribution over target vocabulary
+    
+    ########### END-TO-END MODEL ###########
+    model.compile(loss='sparse_categorical_crossentropy',
+                  optimizer=Adam(learning_rate),
+                  metrics=['accuracy'])
+    
+    return model
+
+#tests.test_encdec_model(encdec_model) # commented out to avoid error: english sequences padded to french sequence max length
+
+# OPTIONAL: Train and Print prediction(s)
+
+tmp_x = pad(preproc_english_sentences, max_french_sequence_length) # pad input sequence to output sequence length
+tmp_x = tmp_x.reshape((-1, preproc_french_sentences.shape[-2]))    # reshape for embedding input
+
+# Train the neural network
+enc_dec_model4 = encdec_model4(
+                        tmp_x.shape,
+                        max_french_sequence_length,
+                        english_vocab_size,
+                        french_vocab_size)
+
+enc_dec_model4.summary()
+
+enc_dec_model4.fit(tmp_x, preproc_french_sentences, batch_size=1024, epochs=30, validation_split=0.2)
+</code></pre><pre class="out">_________________________________________________________________
+Layer (type)                 Output Shape              Param #   
+=================================================================
+Embedding_layer (Embedding)  (None, 21, 256)           50944     
+_________________________________________________________________
+GRU_encoder (GRU)            (None, 256)               393984    
+_________________________________________________________________
+Glue (RepeatVector)          (None, 21, 256)           0         
+_________________________________________________________________
+GRU_decoder (GRU)            (None, 21, 256)           393984    
+_________________________________________________________________
+Dense (TimeDistributed)      (None, 21, 344)           88408     
+_________________________________________________________________
+softmax (Activation)         (None, 21, 344)           0         
+=================================================================
+Total params: 927,320
+Trainable params: 927,320
+Non-trainable params: 0
+_________________________________________________________________
+Train on 110288 samples, validate on 27573 samples
+Epoch 1/40
+110288/110288 [==============================] - 25s 226us/step - loss: 3.0396 - acc: 0.4359 - val_loss: nan - val_acc: 0.4655
+Epoch 2/40
+110288/110288 [==============================] - 22s 203us/step - loss: 2.0204 - acc: 0.5045 - val_loss: nan - val_acc: 0.5426
+Epoch 3/40
+110288/110288 [==============================] - 22s 203us/step - loss: 1.6538 - acc: 0.5793 - val_loss: nan - val_acc: 0.6071
+Epoch 4/40
+110288/110288 [==============================] - 22s 203us/step - loss: 1.4164 - acc: 0.6274 - val_loss: nan - val_acc: 0.6427
+Epoch 5/40
+110288/110288 [==============================] - 22s 203us/step - loss: 1.2816 - acc: 0.6516 - val_loss: nan - val_acc: 0.6662
+Epoch 6/40
+110288/110288 [==============================] - 22s 204us/step - loss: 1.1459 - acc: 0.6864 - val_loss: nan - val_acc: 0.7030
+Epoch 7/40
+110288/110288 [==============================] - 22s 203us/step - loss: 1.0186 - acc: 0.7145 - val_loss: nan - val_acc: 0.7209
+Epoch 8/40
+110288/110288 [==============================] - 22s 203us/step - loss: 0.9381 - acc: 0.7297 - val_loss: nan - val_acc: 0.7395
+Epoch 9/40
+110288/110288 [==============================] - 22s 203us/step - loss: 0.8643 - acc: 0.7468 - val_loss: nan - val_acc: 0.7564
+Epoch 10/40
+110288/110288 [==============================] - 22s 204us/step - loss: 0.8093 - acc: 0.7609 - val_loss: nan - val_acc: 0.7707
+Epoch 11/40
+110288/110288 [==============================] - 22s 203us/step - loss: 0.7438 - acc: 0.7793 - val_loss: nan - val_acc: 0.7787
+Epoch 12/40
+110288/110288 [==============================] - 22s 203us/step - loss: 0.6931 - acc: 0.7929 - val_loss: nan - val_acc: 0.8015
+Epoch 13/40
+110288/110288 [==============================] - 22s 203us/step - loss: 0.6437 - acc: 0.8076 - val_loss: nan - val_acc: 0.8140
+Epoch 14/40
+110288/110288 [==============================] - 22s 203us/step - loss: 0.5953 - acc: 0.8243 - val_loss: nan - val_acc: 0.8337
+Epoch 15/40
+110288/110288 [==============================] - 22s 204us/step - loss: 0.5436 - acc: 0.8419 - val_loss: nan - val_acc: 0.8472
+Epoch 16/40
+110288/110288 [==============================] - 22s 203us/step - loss: 0.4954 - acc: 0.8580 - val_loss: nan - val_acc: 0.8627
+Epoch 17/40
+110288/110288 [==============================] - 22s 204us/step - loss: 0.4551 - acc: 0.8708 - val_loss: nan - val_acc: 0.8760
+Epoch 18/40
+110288/110288 [==============================] - 22s 204us/step - loss: 0.4149 - acc: 0.8833 - val_loss: nan - val_acc: 0.8883
+Epoch 19/40
+110288/110288 [==============================] - 22s 204us/step - loss: 0.3822 - acc: 0.8935 - val_loss: nan - val_acc: 0.8993
+Epoch 20/40
+110288/110288 [==============================] - 22s 203us/step - loss: 0.3484 - acc: 0.9039 - val_loss: nan - val_acc: 0.9050
+Epoch 21/40
+110288/110288 [==============================] - 22s 204us/step - loss: 0.3227 - acc: 0.9114 - val_loss: nan - val_acc: 0.9133
+Epoch 22/40
+110288/110288 [==============================] - 22s 204us/step - loss: 0.2966 - acc: 0.9187 - val_loss: nan - val_acc: 0.9156
+Epoch 23/40
+110288/110288 [==============================] - 22s 204us/step - loss: 0.2716 - acc: 0.9256 - val_loss: nan - val_acc: 0.9265
+Epoch 24/40
+110288/110288 [==============================] - 22s 204us/step - loss: 0.2545 - acc: 0.9301 - val_loss: nan - val_acc: 0.9289
+Epoch 25/40
+110288/110288 [==============================] - 22s 203us/step - loss: 0.2306 - acc: 0.9368 - val_loss: nan - val_acc: 0.9388
+Epoch 26/40
+110288/110288 [==============================] - 22s 203us/step - loss: 0.2122 - acc: 0.9429 - val_loss: nan - val_acc: 0.9424
+Epoch 27/40
+110288/110288 [==============================] - 22s 203us/step - loss: 0.1887 - acc: 0.9504 - val_loss: nan - val_acc: 0.9507
+Epoch 28/40
+110288/110288 [==============================] - 22s 204us/step - loss: 0.1663 - acc: 0.9575 - val_loss: nan - val_acc: 0.9540
+Epoch 29/40
+110288/110288 [==============================] - 22s 204us/step - loss: 0.1563 - acc: 0.9602 - val_loss: nan - val_acc: 0.9532
+Epoch 30/40
+110288/110288 [==============================] - 22s 203us/step - loss: 0.1457 - acc: 0.9635 - val_loss: nan - val_acc: 0.9627
+Epoch 31/40
+110288/110288 [==============================] - 22s 203us/step - loss: 0.1265 - acc: 0.9686 - val_loss: nan - val_acc: 0.9641
+Epoch 32/40
+110288/110288 [==============================] - 22s 203us/step - loss: 0.1126 - acc: 0.9721 - val_loss: nan - val_acc: 0.9669
+Epoch 33/40
+110288/110288 [==============================] - 22s 203us/step - loss: 0.1079 - acc: 0.9731 - val_loss: nan - val_acc: 0.9655
+Epoch 34/40
+110288/110288 [==============================] - 22s 203us/step - loss: 0.1072 - acc: 0.9726 - val_loss: nan - val_acc: 0.9664
+Epoch 35/40
+110288/110288 [==============================] - 22s 203us/step - loss: 0.0969 - acc: 0.9750 - val_loss: nan - val_acc: 0.9700
+Epoch 36/40
+110288/110288 [==============================] - 22s 203us/step - loss: 0.0927 - acc: 0.9761 - val_loss: nan - val_acc: 0.9714
+Epoch 37/40
+110288/110288 [==============================] - 22s 203us/step - loss: 0.0857 - acc: 0.9777 - val_loss: nan - val_acc: 0.9715
+Epoch 38/40
+110288/110288 [==============================] - 22s 203us/step - loss: 0.0824 - acc: 0.9783 - val_loss: nan - val_acc: 0.9735
+Epoch 39/40
+110288/110288 [==============================] - 22s 203us/step - loss: 0.0734 - acc: 0.9806 - val_loss: nan - val_acc: 0.9734
+Epoch 40/40
+110288/110288 [==============================] - 22s 203us/step - loss: 0.0724 - acc: 0.9808 - val_loss: nan - val_acc: 0.9739
+</pre><pre class="out">&lt;keras.callbacks.History at 0x7fabbc2527f0&gt;</pre></div><div class="cell"><pre><code>print('---- Original ----')
+print(' '.join(token_to_words(tmp_x[:1][0],english_tokenizer) ))
+print()
+translate(enc_dec_model4.predict(tmp_x[:1]), preproc_french_sentences[:1])</code></pre><pre class="out">---- Original ----
+new jersey is sometimes quiet during autumn and it is snowy in april
+
+---- Gold standard ----
+new jersey est parfois calme pendant l' automne et il est neigeux en avril
+
+---- Prediction ----
+[0;30;0m new[0;30;0m jersey[0;30;0m est[0;30;0m parfois[0;30;0m calme[0;30;0m pendant[0;30;0m l'[0;30;0m automne[0;30;0m et[0;30;0m il[0;30;0m est[0;30;0m neigeux[0;30;0m en[0;30;0m avril
+</pre></div><div class="cell"><pre><code># Save the weights
+enc_dec_model4.save_weights('final_model_encdec4')
+
+# Save the entire model as a SavedModel.
+!mkdir -p saved_model
+enc_dec_model4.save('saved_model/final_model_encdec4_full')</code></pre></div><div class="cell"><p><h3>More complex Encoder-Decoder with GRU RNNs</h3>
+- Bidirectional unit for the encoder (2 layers)
+- 2 layers depth for the decoder
+- Good convergence and accuracy, at par with LSTM, with less parameters</p></div><div class="cell"><pre><code>def encdec_model(input_shape, output_sequence_length, english_vocab_size, french_vocab_size):
+    """
+    Build and train an encoder-decoder model on x and y
+    :param input_shape: Tuple of input shape
+    :param output_sequence_length: Length of output sequence
+    :param english_vocab_size: Number of unique English words in the dataset
+    :param french_vocab_size: Number of unique French words in the dataset
+    :return: Keras model built, but not trained
+    """
+    # OPTIONAL: Implement
+    
+    learning_rate = 0.001
+    embedding_size = 512
+    num_units = 256
+    
+    ########### ENCODER ###########
+    # Expected shape for Embedding layer input : (batchsize, Seq_length)
+    encoder_input = Input(shape=input_shape[1:], name="input_Encoder")  
+    
+    embeddings = Embedding(input_dim = english_vocab_size, output_dim = embedding_size, 
+                           input_length= input_shape[1], name="Embedding_layer")(encoder_input)
+    # output shape of embeddings = (batch , seq_length, embedding_size)
+    
+    encoder_output = Bidirectional(GRU(num_units, return_sequences=False, activation="tanh"), name="BiGRU_encoder")(embeddings)
+    # output shape of decoder = (batch , num_units)
+    
+    ########### INTERMEDIARY ###########
+    # This adjusts the shape of the Encoder output (2D) to the need of the Decoder (3D input).
+    # We repeat the 2D vector over sequence_length times to produce the shape (batchsize, seq_length, num_units)
+    sequenced_context_vector = RepeatVector(output_sequence_length)(encoder_output)
+    # output shape of glue intermediary step = (batch , seq_length, num_units) compatible with expected input for Decoder GRU  
+    
+    ########### DECODER ###########
+       
+    x = GRU(num_units, return_sequences=True, activation="tanh", name="GRU_layer1")(sequenced_context_vector)
+    # output shape of GRU = (batch , seq_length, num_units) because return_seq activated
+    x = GRU(num_units, return_sequences=True, activation="tanh", name="GRU_layer2")(x)
+    # output shape of GRU = (batch , seq_length, num_units) because return_seq activated
+    
+    preds = TimeDistributed(Dense(french_vocab_size, activation="softmax"), name="Dense_layer")(x)
+    # output shape of decoder = (batch , french_vocab_size) probability distribution over target vocabulary
+    
+    ########### END-TO-END MODEL ###########
+    model = Model(inputs=encoder_input, outputs=preds, name='Encdec')
+    
+    model.compile(loss=sparse_categorical_crossentropy,
+                  optimizer=Adam(learning_rate),
+                  metrics=['accuracy'])
+    
+    return model
+
+#tests.test_encdec_model(encdec_model) # commented out to avoid error: english sequences padded to french sequence max length
+
+# OPTIONAL: Train and Print prediction(s)
+
+tmp_x = pad(preproc_english_sentences, max_french_sequence_length) # pad input sequence to output sequence length
+tmp_x = tmp_x.reshape((-1, preproc_french_sentences.shape[-2]))    # reshape for embedding input
+
+# Train the neural network
+enc_dec_model = encdec_model(
+                        tmp_x.shape,
+                        max_french_sequence_length,
+                        english_vocab_size,
+                        french_vocab_size)
+
+enc_dec_model.summary()
+
+enc_dec_model.fit(tmp_x, preproc_french_sentences, batch_size=1024, epochs=25, validation_split=0.2)
+</code></pre><pre class="out">Model: "Encdec"
+_________________________________________________________________
+Layer (type)                 Output Shape              Param #   
+=================================================================
+input_Encoder (InputLayer)   (None, 21)                0         
+_________________________________________________________________
+Embedding_layer (Embedding)  (None, 21, 512)           101888    
+_________________________________________________________________
+BiGRU_encoder (Bidirectional (None, 512)               1181184   
+_________________________________________________________________
+repeat_vector_8 (RepeatVecto (None, 21, 512)           0         
+_________________________________________________________________
+GRU_layer1 (GRU)             (None, 21, 256)           590592    
+_________________________________________________________________
+GRU_layer2 (GRU)             (None, 21, 256)           393984    
+_________________________________________________________________
+Dense_layer (TimeDistributed (None, 21, 345)           88665     
+=================================================================
+Total params: 2,356,313
+Trainable params: 2,356,313
+Non-trainable params: 0
+_________________________________________________________________
+</pre><pre class="out">C:\Users\lveys\anaconda3\envs\nlp_py37\lib\site-packages\tensorflow_core\python\framework\indexed_slices.py:433: UserWarning: Converting sparse IndexedSlices to a dense Tensor of unknown shape. This may consume a large amount of memory.
+  "Converting sparse IndexedSlices to a dense Tensor of unknown shape. "
+</pre><pre class="out">Train on 110288 samples, validate on 27573 samples
+Epoch 1/25
+110288/110288 [==============================] - 23s 210us/step - loss: 2.7213 - accuracy: 0.4575 - val_loss: nan - val_accuracy: 0.5223
+Epoch 2/25
+110288/110288 [==============================] - 22s 202us/step - loss: 1.7588 - accuracy: 0.5601 - val_loss: nan - val_accuracy: 0.5959
+Epoch 3/25
+110288/110288 [==============================] - 22s 203us/step - loss: 1.4468 - accuracy: 0.6125 - val_loss: nan - val_accuracy: 0.6296
+Epoch 4/25
+110288/110288 [==============================] - 24s 214us/step - loss: 1.2990 - accuracy: 0.6430 - val_loss: nan - val_accuracy: 0.6648
+Epoch 5/25
+110288/110288 [==============================] - 24s 217us/step - loss: 1.1607 - accuracy: 0.6799 - val_loss: nan - val_accuracy: 0.6497
+Epoch 6/25
+110288/110288 [==============================] - 24s 214us/step - loss: 1.0459 - accuracy: 0.7029 - val_loss: nan - val_accuracy: 0.7118
+Epoch 7/25
+110288/110288 [==============================] - 25s 224us/step - loss: 0.9689 - accuracy: 0.7173 - val_loss: nan - val_accuracy: 0.7267
+Epoch 8/25
+110288/110288 [==============================] - 25s 223us/step - loss: 0.9017 - accuracy: 0.7339 - val_loss: nan - val_accuracy: 0.7397
+Epoch 9/25
+110288/110288 [==============================] - 25s 223us/step - loss: 0.8408 - accuracy: 0.7494 - val_loss: nan - val_accuracy: 0.7554
+Epoch 10/25
+110288/110288 [==============================] - 25s 224us/step - loss: 0.7658 - accuracy: 0.7683 - val_loss: nan - val_accuracy: 0.7758
+Epoch 11/25
+110288/110288 [==============================] - 26s 234us/step - loss: 0.7013 - accuracy: 0.7850 - val_loss: nan - val_accuracy: 0.7930
+Epoch 12/25
+110288/110288 [==============================] - 25s 231us/step - loss: 0.6452 - accuracy: 0.7998 - val_loss: nan - val_accuracy: 0.8054
+Epoch 13/25
+110288/110288 [==============================] - 25s 227us/step - loss: 0.5889 - accuracy: 0.8169 - val_loss: nan - val_accuracy: 0.8267
+Epoch 14/25
+110288/110288 [==============================] - 25s 228us/step - loss: 0.5330 - accuracy: 0.8350 - val_loss: nan - val_accuracy: 0.8429
+Epoch 15/25
+110288/110288 [==============================] - 25s 229us/step - loss: 0.4738 - accuracy: 0.8555 - val_loss: nan - val_accuracy: 0.8609
+Epoch 16/25
+110288/110288 [==============================] - 25s 230us/step - loss: 0.4194 - accuracy: 0.8738 - val_loss: nan - val_accuracy: 0.8828
+Epoch 17/25
+110288/110288 [==============================] - 26s 233us/step - loss: 0.3723 - accuracy: 0.8893 - val_loss: nan - val_accuracy: 0.8994
+Epoch 18/25
+110288/110288 [==============================] - 26s 235us/step - loss: 0.3247 - accuracy: 0.9068 - val_loss: nan - val_accuracy: 0.9135
+Epoch 19/25
+110288/110288 [==============================] - 28s 250us/step - loss: 0.2733 - accuracy: 0.9261 - val_loss: nan - val_accuracy: 0.9338
+Epoch 20/25
+110288/110288 [==============================] - 29s 258us/step - loss: 0.2281 - accuracy: 0.9413 - val_loss: nan - val_accuracy: 0.9447
+Epoch 21/25
+110288/110288 [==============================] - 25s 231us/step - loss: 0.1962 - accuracy: 0.9504 - val_loss: nan - val_accuracy: 0.9538
+Epoch 22/25
+110288/110288 [==============================] - 27s 242us/step - loss: 0.1677 - accuracy: 0.9579 - val_loss: nan - val_accuracy: 0.9568
+Epoch 23/25
+110288/110288 [==============================] - 26s 233us/step - loss: 0.1609 - accuracy: 0.9587 - val_loss: nan - val_accuracy: 0.9597
+Epoch 24/25
+110288/110288 [==============================] - 26s 233us/step - loss: 0.1566 - accuracy: 0.9594 - val_loss: nan - val_accuracy: 0.9584
+Epoch 25/25
+110288/110288 [==============================] - 26s 240us/step - loss: 0.1200 - accuracy: 0.9690 - val_loss: nan - val_accuracy: 0.9675
+</pre><pre class="out">&lt;keras.callbacks.callbacks.History at 0x2ae749cfb48&gt;</pre></div><div class="cell"><pre><code># Print prediction(s)
+print('---- Original ----')
+print(' '.join(token_to_words(tmp_x[:1][0],english_tokenizer) ))
+print()
+translate(enc_dec_model.predict(tmp_x[:1]), preproc_french_sentences[:1])</code></pre><pre class="out">---- Original ----
+new jersey is sometimes quiet during autumn and it is snowy in april
+
+---- Gold standard ----
+new jersey est parfois calme pendant l' automne et il est neigeux en avril
+
+---- Prediction ----
+[0;30;0m new[0;30;0m jersey[0;30;0m est[0;30;0m parfois[0;30;0m calme[0;30;0m pendant[0;30;0m l'[0;30;0m automne[0;30;0m et[0;30;0m il[0;30;0m est[0;30;0m neigeux[0;30;0m en[0;30;0m avril
+</pre></div><div class="cell"><p><h3>Savings weights of Encoder Decoder model</h3></p></div><div class="cell"><pre><code># Save the weights
+enc_dec_model.save_weights('final_model_encdec_GRU')
+
+# Save the entire model as a SavedModel.
+#!mkdir -p saved_model
+enc_dec_model.save('saved_model/final_model_encdec_GRU_full')</code></pre></div><div class="cell"><p><h3>Model 5: Custom (IMPLEMENTATION)</h3>
+Use everything you learned from the previous models to create a model that incorporates embedding and a bidirectional rnn into one model.</p><p>#### Inputs/Outputs shape Customl RNN
+- Embedding requires input shape (batchsize, input_length) and outputs (batchsize, input_length, embedded_dim)
+- this shape is OK for input to LSTM (3D)
+- LSTM or GRU Input shape (batchsize, timesteps, embedded_dim). Return_sequence activated to return output at each timestep
+- output shape Bidir-LSTM (None, timesteps = sequence_length, 2 x LSTM num_units) because both outputs are concatenated.
+- Use of TimeDistributed wrapper over Dense(target_vocab_size) to process each timestep
+- for each time step, Dense outputs a probability distribution over target_vocab to predict next word
+</p></div><div class="cell"><pre><code>def model_final(input_shape, output_sequence_length, english_vocab_size, french_vocab_size):
+    """
+    Build and train a model that incorporates embedding, encoder-decoder, and bidirectional RNN on x and y
+    :param input_shape: Tuple of input shape
+    :param output_sequence_length: Length of output sequence
+    :param english_vocab_size: Number of unique English words in the dataset
+    :param french_vocab_size: Number of unique French words in the dataset
+    :return: Keras model built, but not trained
+    """
+    
+    learning_rate = 6e-3
+    embedding_size = 256
+    units = 256
+    
+    model = Sequential()
+    
+    ########### ENCODER ###########
+    
+    model.add(Embedding(input_dim = english_vocab_size, output_dim = embedding_size, 
+                           input_length= input_shape[1], name="Embedding_layer"))
+    model.add(Bidirectional(LSTM(units, return_sequences=False), name='Bi_LSTM_encoder'))
+    
+    ########### INTERMEDIARY ###########
+    
+    model.add(RepeatVector(output_sequence_length, name='Glue'))
+    
+    ########### DECODER ###########
+    
+    model.add(LSTM(units, return_sequences=True, name='LSTM_decoder'))
+    model.add(TimeDistributed(Dense(french_vocab_size, activation='softmax'), name='Dense'))
+    
+    ########### END-TO-END MODEL ###########
+    
+    model.compile(loss=sparse_categorical_crossentropy,
+                  optimizer=Adam(learning_rate),
+                  metrics=['accuracy'])
+    
+    return model
+
+tests.test_model_final(model_final)
+
+# TODO: Train the final model
+
+tmp_x = pad(preproc_english_sentences, max_french_sequence_length) # pad input sequence to output sequence length
+tmp_x = tmp_x.reshape((-1, preproc_french_sentences.shape[-2]))    # reshape for embedding input
+
+# Train the neural network
+final_model = model_final(
+                        tmp_x.shape,
+                        max_french_sequence_length,
+                        english_vocab_size,
+                        french_vocab_size)
+
+final_model.summary()
+
+final_model.fit(tmp_x, preproc_french_sentences, batch_size=1024, epochs=20, validation_split=0.2)
+
+print('Final Model Loaded')
+</code></pre><pre class="out">_________________________________________________________________
+Layer (type)                 Output Shape              Param #   
+=================================================================
+Embedding_layer (Embedding)  (None, 21, 256)           50944     
+_________________________________________________________________
+Bi_LSTM_encoder (Bidirection (None, 512)               1050624   
+_________________________________________________________________
+Glue (RepeatVector)          (None, 21, 512)           0         
+_________________________________________________________________
+LSTM_decoder (LSTM)          (None, 21, 256)           787456    
+_________________________________________________________________
+Dense (TimeDistributed)      (None, 21, 344)           88408     
+=================================================================
+Total params: 1,977,432
+Trainable params: 1,977,432
+Non-trainable params: 0
+_________________________________________________________________
+Train on 110288 samples, validate on 27573 samples
+Epoch 1/20
+110288/110288 [==============================] - 45s 408us/step - loss: 2.5207 - acc: 0.4688 - val_loss: nan - val_acc: 0.5581
+Epoch 2/20
+110288/110288 [==============================] - 41s 371us/step - loss: 1.4338 - acc: 0.6215 - val_loss: nan - val_acc: 0.6713
+Epoch 3/20
+110288/110288 [==============================] - 41s 371us/step - loss: 1.0850 - acc: 0.6964 - val_loss: nan - val_acc: 0.7289
+Epoch 4/20
+110288/110288 [==============================] - 41s 371us/step - loss: 0.8426 - acc: 0.7528 - val_loss: nan - val_acc: 0.7778
+Epoch 5/20
+110288/110288 [==============================] - 41s 371us/step - loss: 0.6418 - acc: 0.8109 - val_loss: nan - val_acc: 0.8417
+Epoch 6/20
+110288/110288 [==============================] - 41s 371us/step - loss: 0.4699 - acc: 0.8635 - val_loss: nan - val_acc: 0.8895
+Epoch 7/20
+110288/110288 [==============================] - 41s 371us/step - loss: 0.3580 - acc: 0.8991 - val_loss: nan - val_acc: 0.9204
+Epoch 8/20
+110288/110288 [==============================] - 41s 371us/step - loss: 0.2545 - acc: 0.9321 - val_loss: nan - val_acc: 0.9376
+Epoch 9/20
+110288/110288 [==============================] - 41s 371us/step - loss: 0.1967 - acc: 0.9487 - val_loss: nan - val_acc: 0.9525
+Epoch 10/20
+110288/110288 [==============================] - 41s 371us/step - loss: 0.1542 - acc: 0.9603 - val_loss: nan - val_acc: 0.9567
+Epoch 11/20
+110288/110288 [==============================] - 41s 371us/step - loss: 0.1246 - acc: 0.9681 - val_loss: nan - val_acc: 0.9674
+Epoch 12/20
+110288/110288 [==============================] - 41s 371us/step - loss: 0.1075 - acc: 0.9719 - val_loss: nan - val_acc: 0.9699
+Epoch 13/20
+110288/110288 [==============================] - 41s 371us/step - loss: 0.0945 - acc: 0.9750 - val_loss: nan - val_acc: 0.9706
+Epoch 14/20
+110288/110288 [==============================] - 41s 371us/step - loss: 0.0839 - acc: 0.9776 - val_loss: nan - val_acc: 0.9744
+Epoch 15/20
+110288/110288 [==============================] - 41s 371us/step - loss: 0.0721 - acc: 0.9806 - val_loss: nan - val_acc: 0.9745
+Epoch 16/20
+110288/110288 [==============================] - 41s 371us/step - loss: 0.0632 - acc: 0.9829 - val_loss: nan - val_acc: 0.9742
+Epoch 17/20
+110288/110288 [==============================] - 41s 371us/step - loss: 0.0690 - acc: 0.9811 - val_loss: nan - val_acc: 0.9747
+Epoch 18/20
+110288/110288 [==============================] - 41s 371us/step - loss: 0.0760 - acc: 0.9791 - val_loss: nan - val_acc: 0.9756
+Epoch 19/20
+110288/110288 [==============================] - 41s 371us/step - loss: 0.0573 - acc: 0.9842 - val_loss: nan - val_acc: 0.9782
+Epoch 20/20
+110288/110288 [==============================] - 41s 371us/step - loss: 0.0588 - acc: 0.9839 - val_loss: nan - val_acc: 0.9785
+Final Model Loaded
+</pre></div><div class="cell"><pre><code>print('---- Original ----')
+print(' '.join(token_to_words(tmp_x[:1][0],english_tokenizer) ))
+print()
+translate(final_model.predict(tmp_x[:1]), preproc_french_sentences[:1])</code></pre><pre class="out">---- Original ----
+new jersey is sometimes quiet during autumn and it is snowy in april
+
+---- Gold standard ----
+new jersey est parfois calme pendant l' automne et il est neigeux en avril
+
+---- Prediction ----
+[0;30;0m new[0;30;0m jersey[0;30;0m est[0;30;0m parfois[0;30;0m calme[0;30;0m pendant[0;30;0m l'[0;30;0m automne[0;30;0m et[0;30;0m il[0;30;0m est[0;30;0m neigeux[0;30;0m en[0;30;0m avril
+</pre></div><div class="cell"><p><h3>Save Best Model</h3></p></div><div class="cell"><pre><code># Save the weights
+final_model.save_weights('final_model')</code></pre></div><div class="cell"><pre><code># Save the entire model as a SavedModel.
+!mkdir -p saved_model
+final_model.save('saved_model/final_model_full')</code></pre></div><div class="cell"><p><h2>Prediction (IMPLEMENTATION)</h2>
+- the objective is to reach a minimum of 95% validation accuracy so that to have meaningful predictions</p></div><div class="cell"><pre><code>def final_predictions(x, y, x_tk, y_tk):
+    """
+    Train the final embedding + bidirectional encoder-decoder model and print
+    translations for the two rubric sentences.
+    :param x: Preprocessed English data
+    :param y: Preprocessed French data
+    :param x_tk: English tokenizer
+    :param y_tk: French tokenizer
+    """
+    x = pad(x, y.shape[1])
+
+    model = model_final(
+        x.shape,
+        y.shape[1],
+        len(x_tk.word_index) + 1,
+        len(y_tk.word_index) + 1
+    )
+
+    model.summary()
+    model.fit(x, y, batch_size=1024, epochs=10, validation_split=0.2)
+
+    y_id_to_word = {value: key for key, value in y_tk.word_index.items()}
+    y_id_to_word[0] = '&lt;PAD&gt;'
+
+    sentence = 'he saw a old yellow truck'
+    sentence = [x_tk.word_index[word] for word in sentence.split()]
+    sentence = pad([sentence], y.shape[1])
+    sentences = np.array([sentence[0], x[0]])
+    predictions = model.predict(sentences)
+
+    print('Sample 1:')
+    print(' '.join([y_id_to_word[np.argmax(word_logits)] for word_logits in predictions[0]]))
+    print('Il a vu un vieux camion jaune')
+    print('Sample 2:')
+    print(' '.join([y_id_to_word[np.argmax(word_logits)] for word_logits in predictions[1]]))
+    print(' '.join([y_id_to_word[int(token)] for token in y[0].flatten()]))
+
+
+final_predictions(preproc_english_sentences, preproc_french_sentences, english_tokenizer, french_tokenizer)
+</code></pre><pre class="out">_________________________________________________________________
+Layer (type)                 Output Shape              Param #   
+=================================================================
+Embedding_layer (Embedding)  (None, 15, 256)           50944     
+_________________________________________________________________
+Bi_LSTM_encoder (Bidirection (None, 512)               1050624   
+_________________________________________________________________
+Glue (RepeatVector)          (None, 21, 512)           0         
+_________________________________________________________________
+LSTM_decoder (LSTM)          (None, 21, 256)           787456    
+_________________________________________________________________
+Dense (TimeDistributed)      (None, 21, 344)           88408     
+=================================================================
+Total params: 1,977,432
+Trainable params: 1,977,432
+Non-trainable params: 0
+_________________________________________________________________
+Train on 110288 samples, validate on 27573 samples
+Epoch 1/10
+110288/110288 [==============================] - 37s 332us/step - loss: 2.4026 - acc: 0.4874 - val_loss: nan - val_acc: 0.5710
+Epoch 2/10
+110288/110288 [==============================] - 35s 313us/step - loss: 1.4013 - acc: 0.6224 - val_loss: nan - val_acc: 0.6616
+Epoch 3/10
+110288/110288 [==============================] - 35s 313us/step - loss: 1.0282 - acc: 0.7080 - val_loss: nan - val_acc: 0.7492
+Epoch 4/10
+110288/110288 [==============================] - 35s 314us/step - loss: 0.7474 - acc: 0.7807 - val_loss: nan - val_acc: 0.8167
+Epoch 5/10
+110288/110288 [==============================] - 35s 314us/step - loss: 0.5208 - acc: 0.8469 - val_loss: nan - val_acc: 0.8768
+Epoch 6/10
+110288/110288 [==============================] - 35s 314us/step - loss: 0.3440 - acc: 0.9024 - val_loss: nan - val_acc: 0.9248
+Epoch 7/10
+110288/110288 [==============================] - 35s 314us/step - loss: 0.2372 - acc: 0.9367 - val_loss: nan - val_acc: 0.9458
+Epoch 8/10
+110288/110288 [==============================] - 35s 314us/step - loss: 0.1680 - acc: 0.9560 - val_loss: nan - val_acc: 0.9566
+Epoch 9/10
+110288/110288 [==============================] - 35s 314us/step - loss: 0.1345 - acc: 0.9644 - val_loss: nan - val_acc: 0.9622
+Epoch 10/10
+110288/110288 [==============================] - 35s 314us/step - loss: 0.1124 - acc: 0.9694 - val_loss: nan - val_acc: 0.9693
+Sample 1:
+il a vu un vieux camion jaune &lt;PAD&gt; &lt;PAD&gt; &lt;PAD&gt; &lt;PAD&gt; &lt;PAD&gt; &lt;PAD&gt; &lt;PAD&gt; &lt;PAD&gt; &lt;PAD&gt; &lt;PAD&gt; &lt;PAD&gt; &lt;PAD&gt; &lt;PAD&gt; &lt;PAD&gt;
+Il a vu un vieux camion jaune
+Sample 2:
+new jersey est parfois calme pendant l' automne et il est neigeux en avril &lt;PAD&gt; &lt;PAD&gt; &lt;PAD&gt; &lt;PAD&gt; &lt;PAD&gt; &lt;PAD&gt; &lt;PAD&gt;
+new jersey est parfois calme pendant l' automne et il est neigeux en avril &lt;PAD&gt; &lt;PAD&gt; &lt;PAD&gt; &lt;PAD&gt; &lt;PAD&gt; &lt;PAD&gt; &lt;PAD&gt;
+</pre></div><div class="cell"><p><h2>Submission</h2>
+When you're ready to submit, complete the following steps:
+1. Review the [rubric](https://review.udacity.com/#!/rubrics/1004/view) to ensure your submission meets all requirements to pass
+2. Generate an HTML version of this notebook</p><p>  - Run the next cell to attempt automatic generation (this is the recommended method in Workspaces)
+  - Navigate to <strong>FILE -&gt; Download as -&gt; HTML (.html)</strong>
+  - Manually generate a copy using <code>nbconvert</code> from your shell terminal
+``<code>
+$ pip install nbconvert
+$ python -m nbconvert machine_translation.ipynb
+</code>`<code>
+  
+3. Submit the project</p><p>  - If you are in a Workspace, simply click the "Submit Project" button (bottom towards the right)
+  
+  - Otherwise, add the following files into a zip archive and submit them 
+  - </code>helper.py<code>
+  - </code>machine_translation.ipynb<code>
+  - </code>machine_translation.html`
+    - You can export the notebook by navigating to <strong>File -&gt; Download as -&gt; HTML (.html)</strong>.</p></div><div class="cell"><p><h3>Generate the html</h3></p><p><strong>Save your notebook before running the next cell to generate the HTML output.</strong> Then submit your project.</p></div><div class="cell"><pre><code># Save before you run this cell!
+!!jupyter nbconvert *.ipynb</code></pre><pre class="out">['[NbConvertApp] Converting notebook machine_translation-Copy1.ipynb to html',
+ '[NbConvertApp] Writing 509712 bytes to machine_translation-Copy1.html',
+ '[NbConvertApp] Converting notebook machine_translation.ipynb to html',
+ '[NbConvertApp] Writing 425160 bytes to machine_translation.html']</pre></div><div class="cell"><p><h2>Optional Enhancements</h2></p><p>This project focuses on learning various network architectures for machine translation, but we don't evaluate the models according to best practices by splitting the data into separate test &amp; training sets -- so the model accuracy is overstated. Use the [<code>sklearn.model_selection.train_test_split()</code>](http://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html) function to create separate training &amp; test datasets, then retrain each of the models using only the training set and evaluate the prediction accuracy using the hold out test set. Does the "best" model change?</p></div><div class="cell"><pre><code></code></pre></div></body></html>
