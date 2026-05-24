@@ -8,7 +8,10 @@ import _pickle as pickle
 from keras import backend as K
 from keras.models import Model
 from keras.layers import (Input, Lambda)
-from keras.optimizers import SGD
+try:
+    from keras.optimizers.legacy import SGD
+except ImportError:
+    from keras.optimizers import SGD
 from keras.callbacks import ModelCheckpoint   
 import os
 
@@ -37,18 +40,28 @@ def train_model(input_to_softmax,
                 minibatch_size=20,
                 spectrogram=True,
                 mfcc_dim=13,
-                optimizer=SGD(lr=0.02, decay=1e-6, momentum=0.9, nesterov=True, clipnorm=5),
+                optimizer=None,
                 epochs=20,
                 verbose=1,
                 sort_by_duration=False,
-                max_duration=10.0):
+                max_duration=10.0,
+                fit_train_samples=100):
     
+    if optimizer is None:
+        optimizer = SGD(learning_rate=0.001, decay=1e-6, momentum=0.9,
+                        nesterov=True, clipnorm=5)
+
     # create a class instance for obtaining batches of data
     audio_gen = AudioGenerator(minibatch_size=minibatch_size, 
         spectrogram=spectrogram, mfcc_dim=mfcc_dim, max_duration=max_duration,
         sort_by_duration=sort_by_duration)
-    # add the training data to the generator
-    audio_gen.load_train_data(train_json)
+    # add the training data to the generator.  The original helper estimates
+    # normalization statistics from 100 samples; expose that value so GPU
+    # workspace runs can remain responsive while still using real audio.
+    audio_gen.load_metadata_from_desc_file(train_json, 'train')
+    audio_gen.fit_train(k_samples=fit_train_samples)
+    if audio_gen.sort_by_duration:
+        audio_gen.sort_data_by_duration('train')
     audio_gen.load_validation_data(valid_json)
     # calculate steps_per_epoch
     num_train_examples=len(audio_gen.train_audio_paths)
@@ -68,12 +81,16 @@ def train_model(input_to_softmax,
         os.makedirs('results')
 
     # add checkpointer
-    checkpointer = ModelCheckpoint(filepath='results/'+save_model_path, verbose=0)
+    checkpointer = ModelCheckpoint(filepath='results/'+save_model_path,
+        save_weights_only=True, verbose=0)
 
     # train the model
-    hist = model.fit_generator(generator=audio_gen.next_train(), steps_per_epoch=steps_per_epoch,
+    hist = model.fit(x=audio_gen.next_train(), steps_per_epoch=steps_per_epoch,
         epochs=epochs, validation_data=audio_gen.next_valid(), validation_steps=validation_steps,
         callbacks=[checkpointer], verbose=verbose)
+
+    # Save the acoustic model weights directly for prediction-time load_weights calls.
+    input_to_softmax.save_weights('results/'+save_model_path)
 
     # save model loss
     with open('results/'+pickle_path, 'wb') as f:
