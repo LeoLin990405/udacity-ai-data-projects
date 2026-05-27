@@ -14,7 +14,7 @@ This project analyzes the California housing dataset using the CRISP-DM process 
 
 ## Libraries
 
-The project uses Python, pandas, NumPy, and Pillow for chart generation. The modeling code uses NumPy linear algebra rather than relying on a heavy ML framework.
+The project uses Python 3, pandas, NumPy, scikit-learn, matplotlib, and seaborn.
 
 ## Questions Answered
 
