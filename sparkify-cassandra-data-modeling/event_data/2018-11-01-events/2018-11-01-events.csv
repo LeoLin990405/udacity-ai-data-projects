@@ -1,0 +1,10 @@
+artist,auth,firstName,gender,itemInSession,lastName,length,level,location,method,page,registration,sessionId,song,status,ts,userId
+Faithless,Logged In,Ava,F,4,Robinson,495.3073,paid,New Haven-Milford CT,PUT,NextSong,1540931983796.0,338,Music Matters (Mark Knight Dub),200,1541106673796,86
+Down To The Bone,Logged In,Sylvie,F,0,Cruz,384.67873,free,Washington-Arlington-Alexandria DC-VA-MD-WV,PUT,NextSong,1540266185796.0,182,Keep On Keepin' On,200,1542319121796,10
+Three Drives,Logged In,Sylvie,F,1,Cruz,411.6371,free,Washington-Arlington-Alexandria DC-VA-MD-WV,PUT,NextSong,1540266185796.0,182,Greece 2000,200,1542319521796,10
+Sebastien Tellier,Logged In,Sylvie,F,2,Cruz,278.88281,free,Washington-Arlington-Alexandria DC-VA-MD-WV,PUT,NextSong,1540266185796.0,182,Kilometer,200,1542319932796,10
+Lonnie Gordon,Logged In,Sylvie,F,3,Cruz,181.21098,free,Washington-Arlington-Alexandria DC-VA-MD-WV,PUT,NextSong,1540266185796.0,182,Catch You Baby (Steve Pitron & Max Sanna Radio Edit),200,1542320211796,10
+The Black Keys,Logged In,Jacqueline,F,1,Lynch,196.12689,paid,Atlanta-Sandy Springs-Roswell GA,PUT,NextSong,1540223723796.0,589,All Hands Against His Own,200,1542314321796,29
+The Black Keys,Logged In,Tegan,F,7,Levine,196.12689,paid,Portland-South Portland ME,PUT,NextSong,1540794356796.0,647,All Hands Against His Own,200,1542319123796,80
+The Black Keys,Logged In,Sara,F,9,Johnson,196.12689,paid,Winston-Salem NC,PUT,NextSong,1540809153796.0,548,All Hands Against His Own,200,1542321123796,95
+,Logged In,NoArtist,F,2,Skipped,200.0,free,Nowhere,PUT,NextSong,1540266185796.0,999,Missing Artist Song,200,1542321123796,11
