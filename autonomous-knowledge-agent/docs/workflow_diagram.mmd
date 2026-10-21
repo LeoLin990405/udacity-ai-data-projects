@@ -1,0 +1,17 @@
+flowchart TD
+    A["Customer ticket input"] --> B["Supervisor Agent\nNormalize ticket and metadata"]
+    B --> C["Classifier Agent\nCategory, urgency, confidence"]
+    C --> D["Knowledge Retrieval Agent\nDB article search + memory recall"]
+    D --> E{"Route decision\nconfidence + urgency + risk"}
+    E -->|Routine + grounded| F["Resolver Agent\nDatabase-backed action tools"]
+    E -->|Critical, low confidence, or risky| G["Escalation Agent\nSpecialist summary"]
+    F --> H["Memory Agent\nPersist customer history"]
+    G --> H
+    H --> I["Structured response\nanswer, citations, route, tools, logs"]
+
+    D -. uses .-> K["Knowledge table\n15 seeded articles"]
+    D -. uses .-> M["CustomerMemory table"]
+    F -. uses .-> T["Support tools\nrefund validation, invoice lookup,\naccount status"]
+    G -. uses .-> S["create_escalation tool"]
+    T -. logs .-> L["ToolLog table"]
+    S -. logs .-> L

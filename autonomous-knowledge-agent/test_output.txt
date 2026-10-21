@@ -1,0 +1,9 @@
+test_billing_ticket_has_citation_and_action_trace (test_uda_hub_agent.UDAHubAgentTest.test_billing_ticket_has_citation_and_action_trace) ... ok
+test_critical_outage_is_escalated (test_uda_hub_agent.UDAHubAgentTest.test_critical_outage_is_escalated) ... ok
+test_refund_ticket_is_resolved_and_remembered (test_uda_hub_agent.UDAHubAgentTest.test_refund_ticket_is_resolved_and_remembered) ... ok
+test_unknown_intent_escalates_with_low_retrieval_confidence (test_uda_hub_agent.UDAHubAgentTest.test_unknown_intent_escalates_with_low_retrieval_confidence) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.025s
+
+OK

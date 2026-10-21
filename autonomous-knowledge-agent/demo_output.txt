@@ -1,0 +1,52 @@
+========================================================================
+ticket: Refund request
+route: resolve
+category: refund
+confidence: 0.9
+knowledge confidence: 0.62
+rationale: Classified as refund with normal urgency; route=resolve.
+tools: search_knowledge, recall_customer_memory, validate_refund_request, add_customer_memory
+citations: KB-2:Refund amount threshold, KB-3:Refund escalation triggers, KB-1:Refund eligibility window
+response: Your request appears eligible for standard refund review. I checked the refund policy and customer account before preparing this response. Source: KB-2:Refund amount threshold, KB-3:Refund escalation triggers, KB-1:Refund eligibility window.
+========================================================================
+ticket: Production outage
+route: escalate
+category: technical_outage
+confidence: 0.9
+knowledge confidence: 0.99
+rationale: Classified as technical_outage with critical urgency; route=escalate.
+tools: search_knowledge, recall_customer_memory, create_escalation, add_customer_memory
+citations: KB-12:API rate limit guidance, KB-11:Critical incident escalation, KB-10:Production outage intake
+response: I am escalating this to a specialist with the relevant context so it can be handled safely and quickly. Source considered: KB-12:API rate limit guidance, KB-11:Critical incident escalation, KB-10:Production outage intake.
+escalation: Escalate technical_outage ticket for customer C-200. Urgency=critical. Reason: Classified as technical_outage with critical urgency; route=escalate.. Customer text: Production outage Our workspace is down and API calls return 503 errors.
+========================================================================
+ticket: Need invoice
+route: resolve
+category: billing
+confidence: 0.9
+knowledge confidence: 0.99
+rationale: Classified as billing with normal urgency; route=resolve.
+tools: search_knowledge, recall_customer_memory, lookup_invoice, add_customer_memory
+citations: KB-4:Billing invoice resend, KB-6:Duplicate charge handling, KB-5:Billing tax correction
+response: I found the billing path for this request. The next safe action is resend_to_billing_email. Source: KB-4:Billing invoice resend, KB-6:Duplicate charge handling, KB-5:Billing tax correction.
+========================================================================
+ticket: Cancel account
+route: resolve
+category: cancellation
+confidence: 0.9
+knowledge confidence: 0.75
+rationale: Classified as cancellation with normal urgency; route=resolve.
+tools: search_knowledge, recall_customer_memory, get_account_status, add_customer_memory
+citations: KB-14:Retention and exports, KB-13:Cancellation confirmation, KB-4:Billing invoice resend
+response: I can help begin cancellation. Please confirm the account id and acknowledge the data retention policy before final closure. Account status checked: active. Source: KB-14:Retention and exports, KB-13:Cancellation confirmation, KB-4:Billing invoice resend.
+========================================================================
+ticket: Need help
+route: escalate
+category: general
+confidence: 0.55
+knowledge confidence: 0.62
+rationale: Classified as general with normal urgency; route=escalate. Retrieval confidence or intent specificity is low, so a specialist should review.
+tools: search_knowledge, recall_customer_memory, create_escalation, add_customer_memory
+citations: KB-15:General support triage, KB-8:MFA recovery, KB-9:Account ownership mismatch
+response: I am escalating this to a specialist with the relevant context so it can be handled safely and quickly. Source considered: KB-15:General support triage, KB-8:MFA recovery, KB-9:Account ownership mismatch.
+escalation: Escalate general ticket for customer C-999. Urgency=normal. Reason: Classified as general with normal urgency; route=escalate. Retrieval confidence or intent specificity is low, so a specialist should review.. Customer text: Need help Something confusing happened and I am not sure what to do.
