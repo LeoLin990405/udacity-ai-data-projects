@@ -1,0 +1,22 @@
+[
+  {
+    "title": "FIFA 21",
+    "developer": "EA Vancouver and EA Romania",
+    "publisher": "EA Sports",
+    "release_date": "2020-10-09",
+    "platforms": ["PlayStation 4", "Xbox One", "Nintendo Switch", "Windows", "PlayStation 5", "Xbox Series X/S", "Stadia"],
+    "genres": ["Sports", "Football simulation"],
+    "description": "FIFA 21 is a football simulation game in Electronic Arts' FIFA series. It added gameplay refinements, expanded career features, and Ultimate Team updates.",
+    "source": "Internal UdaPlay curated dataset"
+  },
+  {
+    "title": "Madden NFL 24",
+    "developer": "EA Tiburon",
+    "publisher": "EA Sports",
+    "release_date": "2023-08-18",
+    "platforms": ["PlayStation 4", "PlayStation 5", "Xbox One", "Xbox Series X/S", "Windows"],
+    "genres": ["Sports", "American football simulation"],
+    "description": "Madden NFL 24 is an American football simulation game featuring updated rosters, Superstar mode, and FieldSENSE improvements on current-generation platforms.",
+    "source": "Internal UdaPlay curated dataset"
+  }
+]

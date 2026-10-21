@@ -1,0 +1,22 @@
+[
+  {
+    "title": "Halo Infinite",
+    "developer": "343 Industries",
+    "publisher": "Xbox Game Studios",
+    "release_date": "2021-12-08",
+    "platforms": ["Windows", "Xbox One", "Xbox Series X/S"],
+    "genres": ["First-person shooter"],
+    "description": "Halo Infinite continues Master Chief's story and includes a free-to-play multiplayer mode.",
+    "source": "Internal UdaPlay curated dataset"
+  },
+  {
+    "title": "Hades",
+    "developer": "Supergiant Games",
+    "publisher": "Supergiant Games",
+    "release_date": "2020-09-17",
+    "platforms": ["Windows", "macOS", "Nintendo Switch", "PlayStation 4", "PlayStation 5", "Xbox One", "Xbox Series X/S", "iOS"],
+    "genres": ["Roguelike", "Action role-playing"],
+    "description": "Hades is a roguelike action role-playing game where Zagreus attempts to escape the Underworld.",
+    "source": "Internal UdaPlay curated dataset"
+  }
+]

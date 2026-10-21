@@ -1,0 +1,22 @@
+[
+  {
+    "title": "Grand Theft Auto V",
+    "developer": "Rockstar North",
+    "publisher": "Rockstar Games",
+    "release_date": "2013-09-17",
+    "platforms": ["PlayStation 3", "Xbox 360", "PlayStation 4", "Xbox One", "Windows", "PlayStation 5", "Xbox Series X/S"],
+    "genres": ["Action-adventure", "Open world"],
+    "description": "Grand Theft Auto V is an open-world action-adventure game set in Los Santos and Blaine County, following Michael, Franklin, and Trevor.",
+    "source": "Internal UdaPlay curated dataset"
+  },
+  {
+    "title": "Grand Theft Auto VI",
+    "developer": "Rockstar Games",
+    "publisher": "Rockstar Games",
+    "release_date": "Announced for 2026",
+    "platforms": ["PlayStation 5", "Xbox Series X/S"],
+    "genres": ["Action-adventure", "Open world"],
+    "description": "Grand Theft Auto VI is Rockstar Games' next major Grand Theft Auto title. Public information indicates a Vice City-inspired setting and a planned console launch.",
+    "source": "Internal UdaPlay curated dataset"
+  }
+]

@@ -1,0 +1,23 @@
+[
+  {
+    "title": "Pokemon Red",
+    "aliases": ["Pokémon Red", "Pocket Monsters Red"],
+    "developer": "Game Freak",
+    "publisher": "Nintendo",
+    "release_date": "1996-02-27",
+    "platforms": ["Game Boy"],
+    "genres": ["Role-playing"],
+    "description": "Pokemon Red is one of the first-generation Pokemon role-playing games. Players travel through Kanto, capture Pokemon, and challenge Gym Leaders.",
+    "source": "Internal UdaPlay curated dataset"
+  },
+  {
+    "title": "The Legend of Zelda: Breath of the Wild",
+    "developer": "Nintendo EPD",
+    "publisher": "Nintendo",
+    "release_date": "2017-03-03",
+    "platforms": ["Nintendo Switch", "Wii U"],
+    "genres": ["Action-adventure", "Open world"],
+    "description": "Breath of the Wild is an open-world action-adventure game that reimagines exploration and puzzle solving in Hyrule.",
+    "source": "Internal UdaPlay curated dataset"
+  }
+]
