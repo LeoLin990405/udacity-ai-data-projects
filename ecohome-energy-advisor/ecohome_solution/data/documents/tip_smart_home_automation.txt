@@ -1,0 +1,2 @@
+Smart home automation tips:
+Create automations that start flexible appliances when solar production exceeds home load or when electricity prices fall below a target threshold. Use scenes that pause EV charging, pool pumps, and discretionary loads during peak-price alerts.

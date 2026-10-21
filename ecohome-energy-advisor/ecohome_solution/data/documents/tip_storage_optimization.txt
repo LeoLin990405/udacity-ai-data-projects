@@ -1,0 +1,2 @@
+Energy storage optimization:
+Charge home batteries during solar surplus or low-price overnight hours. Discharge batteries during peak evening pricing while reserving enough capacity for backup needs. Battery optimization should consider round-trip efficiency and the value of avoided grid purchases.
