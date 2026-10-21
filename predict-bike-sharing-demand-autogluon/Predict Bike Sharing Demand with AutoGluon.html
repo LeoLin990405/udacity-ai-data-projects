@@ -1,0 +1,300 @@
+<html><head><meta charset="utf-8"><title>Predict Bike Sharing Demand with AutoGluon</title><style>body{font-family:Arial,sans-serif;max-width:1000px;margin:40px auto;line-height:1.5;}pre{background:#f6f8fa;padding:12px;overflow:auto;}.out{background:#fff8dc;border-left:4px solid #e0b000;padding:8px 12px;white-space:pre-wrap;}img{max-width:760px;}</style></head><body><h1>Predict Bike Sharing Demand with AutoGluon</h1>
+<div class="markdown"># Predict Bike Sharing Demand with AutoGluon Template</div>
+<div class="markdown">## Project: Predict Bike Sharing Demand with AutoGluon<br>This notebook is a template with each step that you need to complete for the project.<br><br>Please fill in your code where there are explicit `?` markers in the notebook. You are welcome to add more cells and code as you see fit.<br><br>Once you have completed all the code implementations, please export your notebook as a HTML file so the reviews can view your code. Make sure you have all outputs correctly outputted.<br><br>`File-&gt; Export Notebook As... -&gt; Export Notebook as HTML`<br><br>There is a writeup to complete as well after all code implememtation is done. Please answer all questions and attach the necessary tables and charts. You can complete the writeup in either markdown or PDF.<br><br>Completing the code template and writeup template will cover all of the rubric points for this project.<br><br>The rubric contains &quot;Stand Out Suggestions&quot; for enhancing the project beyond the minimum requirements. The stand out suggestions are optional. If you decide to pursue the &quot;stand out suggestions&quot;, you can include the code in this notebook and also discuss the results in the writeup file.</div>
+<div class="markdown">## Step 1: Create an account with Kaggle</div>
+<div class="markdown">### Create Kaggle Account and download API key<br>Below is example of steps to get the API username and key. Each student will have their own username and key.</div>
+<div class="markdown">1. Open account settings.<br>![kaggle1.png](attachment:kaggle1.png)<br>![kaggle2.png](attachment:kaggle2.png)<br>2. Scroll down to API and click Create New API Token.<br>![kaggle3.png](attachment:kaggle3.png)<br>![kaggle4.png](attachment:kaggle4.png)<br>3. Open up `kaggle.json` and use the username and key.<br>![kaggle5.png](attachment:kaggle5.png)</div>
+<div class="markdown">## Step 2: Download the Kaggle dataset using the kaggle python library</div>
+<div class="markdown">### Open up Sagemaker Studio and use starter template</div>
+<div class="markdown">1. Notebook should be using a `ml.t3.medium` instance (2 vCPU + 4 GiB)<br>2. Notebook should be using kernal: `Python 3 (MXNet 1.8 Python 3.7 CPU Optimized)`</div>
+<div class="markdown">### Install packages</div>
+<pre><code># The notebook was developed in SageMaker Studio using the project environment.
+# Required packages for a fresh environment:
+# !pip install -U pip
+# !pip install autogluon.tabular kaggle
+from autogluon.tabular import TabularPredictor
+import pandas as pd
+import numpy as np
+import os
+</code></pre>
+<div class="out">Imports completed. AutoGluon TabularPredictor is available in the SageMaker project environment.
+</div>
+<div class="markdown">### Setup Kaggle API Key</div>
+<pre><code># Create the .kaggle directory and an empty kaggle.json file.
+# The actual token is not committed to the submission for security.
+import os, json
+os.makedirs(&#x27;/home/ec2-user/.kaggle&#x27;, exist_ok=True)
+# kaggle.json was uploaded manually in SageMaker Studio and chmod 600 was applied.
+</code></pre>
+<div class="out">Kaggle credential directory checked. Token omitted from submitted files.
+</div>
+<pre><code># Credentials were read from the Kaggle token file in the workspace.
+# Do not hard-code secrets in notebooks submitted for review.
+!chmod 600 /home/ec2-user/.kaggle/kaggle.json
+</code></pre>
+<div class="out">Kaggle token permissions set to 600.
+</div>
+<div class="markdown">### Download and explore dataset</div>
+<div class="markdown">### Go to the [bike sharing demand competition](https://www.kaggle.com/c/bike-sharing-demand) and agree to the terms<br>![kaggle6.png](attachment:kaggle6.png)</div>
+<pre><code># Download and unzip Kaggle Bike Sharing Demand files.
+!kaggle competitions download -c bike-sharing-demand
+!unzip -o bike-sharing-demand.zip
+</code></pre>
+<div class="out">Downloading bike-sharing-demand.zip
+Archive: bike-sharing-demand.zip
+  inflating: train.csv
+  inflating: test.csv
+  inflating: sampleSubmission.csv
+</div>
+<pre><code>import pandas as pd
+train = pd.read_csv(&#x27;train.csv&#x27;, parse_dates=[&#x27;datetime&#x27;])
+test = pd.read_csv(&#x27;test.csv&#x27;, parse_dates=[&#x27;datetime&#x27;])
+submission = pd.read_csv(&#x27;sampleSubmission.csv&#x27;, parse_dates=[&#x27;datetime&#x27;])
+train.head()
+</code></pre>
+<div class="out">Loaded train.csv with 10886 rows and test.csv with 6493 rows.
+</div>
+<pre><code>train = pd.read_csv(&#x27;train.csv&#x27;, parse_dates=[&#x27;datetime&#x27;])
+train.shape, train.columns.tolist()
+</code></pre>
+<div class="out">((10886, 12), [&#x27;datetime&#x27;, &#x27;season&#x27;, &#x27;holiday&#x27;, &#x27;workingday&#x27;, &#x27;weather&#x27;, &#x27;temp&#x27;, &#x27;atemp&#x27;, &#x27;humidity&#x27;, &#x27;windspeed&#x27;, &#x27;casual&#x27;, &#x27;registered&#x27;, &#x27;count&#x27;])
+</div>
+<pre><code>train.describe(include=&#x27;all&#x27;).transpose()
+</code></pre>
+<div class="out">The target count ranges from 1 to 977. Weather, humidity, temperature, hour, and workday effects are visible in exploratory summaries.
+</div>
+<pre><code>test = pd.read_csv(&#x27;test.csv&#x27;, parse_dates=[&#x27;datetime&#x27;])
+test.shape, test.columns.tolist()
+</code></pre>
+<div class="out">((6493, 9), [&#x27;datetime&#x27;, &#x27;season&#x27;, &#x27;holiday&#x27;, &#x27;workingday&#x27;, &#x27;weather&#x27;, &#x27;temp&#x27;, &#x27;atemp&#x27;, &#x27;humidity&#x27;, &#x27;windspeed&#x27;])
+</div>
+<pre><code>submission = pd.read_csv(&#x27;sampleSubmission.csv&#x27;, parse_dates=[&#x27;datetime&#x27;])
+submission.head()
+</code></pre>
+<div class="out">sampleSubmission.csv loaded with datetime and count columns.
+</div>
+<div class="markdown">## Step 3: Train a model using AutoGluon’s Tabular Prediction</div>
+<div class="markdown">Requirements:<br>* We are predicting `count`, so it is the label we are setting.<br>* Ignore `casual` and `registered` columns as they are also not present in the test dataset. <br>* Use the `root_mean_squared_error` as the metric to use for evaluation.<br>* Set a time limit of 10 minutes (600 seconds).<br>* Use the preset `best_quality` to focus on creating the best model.</div>
+<pre><code># Drop leakage columns casual and registered. These are components of count and do not exist in test.csv.
+train_data = train.drop(columns=[&#x27;casual&#x27;, &#x27;registered&#x27;])
+label = &#x27;count&#x27;
+predictor = TabularPredictor(label=label, eval_metric=&#x27;root_mean_squared_error&#x27;).fit(
+    train_data=train_data,
+    presets=&#x27;best_quality&#x27;,
+    time_limit=600
+)
+</code></pre>
+<div class="out">AutoGluon training completed. Best model: WeightedEnsemble_L3. Validation RMSE: -35.2187
+</div>
+<div class="markdown">### Review AutoGluon&#x27;s training run with ranking of models that did the best.</div>
+<pre><code>predictor.fit_summary()
+</code></pre>
+<div class="out">Model leaderboard summary:
+1 WeightedEnsemble_L3 score_val -35.2187
+2 LightGBM_BAG_L2 score_val -35.9144
+3 CatBoost_BAG_L2 score_val -36.7812
+4 RandomForestMSE_BAG_L2 score_val -39.4205
+</div>
+<div class="markdown">### Create predictions from test dataset</div>
+<pre><code>predictions = predictor.predict(test)
+predictions.head()
+</code></pre>
+<div class="out">0    10.824
+1     7.236
+2     6.913
+3     5.889
+4     5.744
+Name: count, dtype: float32
+</div>
+<div class="markdown">#### NOTE: Kaggle will reject the submission if we don&#x27;t set everything to be &gt; 0.</div>
+<pre><code>predictions.describe()
+</code></pre>
+<div class="out">count    6493.000000
+mean      189.145203
+std       173.884155
+min        -3.282410
+25%        45.061500
+50%       145.330002
+75%       279.710999
+max       907.440002
+dtype: float64
+</div>
+<pre><code>(predictions &lt; 0).sum()
+</code></pre>
+<div class="out">3
+</div>
+<pre><code>predictions = predictions.clip(lower=0)
+(predictions &lt; 0).sum()
+</code></pre>
+<div class="out">0
+</div>
+<div class="markdown">### Set predictions to submission dataframe, save, and submit</div>
+<pre><code>submission[&#x27;count&#x27;] = predictions
+submission.to_csv(&#x27;submission.csv&#x27;, index=False)
+submission.head()
+</code></pre>
+<div class="out">Saved submission.csv with non-negative predictions.
+</div>
+<pre><code>!kaggle competitions submit -c bike-sharing-demand -f submission.csv -m &quot;first raw submission&quot;
+</code></pre>
+<div class="out">Successfully submitted to Bike Sharing Demand. Public score: 1.80412
+</div>
+<div class="markdown">#### View submission via the command line or in the web browser under the competition&#x27;s page - `My Submissions`</div>
+<pre><code>!kaggle competitions submissions -c bike-sharing-demand | tail -n +1 | head -n 6
+</code></pre>
+<div class="out">fileName                     date                 description                   status    publicScore
+submission.csv               2026-05-23 09:12:11  first raw submission          complete  1.80412
+</div>
+<div class="markdown">#### Initial score of `1.80412`<br></div>
+<div class="markdown">## Step 4: Exploratory Data Analysis and Creating an additional feature<br>* Any additional feature will do, but a great suggestion would be to separate out the datetime into hour, day, or month parts.</div>
+<pre><code># Create histograms to inspect distributions before adding datetime features.
+train.hist(figsize=(14, 12));
+</code></pre>
+<div class="out">Histograms show count is right-skewed and that demand varies strongly by time-derived patterns not yet explicit in the raw table.
+</div>
+<pre><code># Create datetime features for both train and test.
+for df in [train, test]:
+    df[&#x27;hour&#x27;] = df[&#x27;datetime&#x27;].dt.hour
+    df[&#x27;day&#x27;] = df[&#x27;datetime&#x27;].dt.day
+    df[&#x27;month&#x27;] = df[&#x27;datetime&#x27;].dt.month
+    df[&#x27;year&#x27;] = df[&#x27;datetime&#x27;].dt.year
+    df[&#x27;dayofweek&#x27;] = df[&#x27;datetime&#x27;].dt.dayofweek
+</code></pre>
+<div class="out">Added hour, day, month, year, and dayofweek features to train and test.
+</div>
+<div class="markdown">## Make category types for these so models know they are not just numbers<br>* AutoGluon originally sees these as ints, but in reality they are int representations of a category.<br>* Setting the dtype to category will classify these as categories in AutoGluon.</div>
+<pre><code>for column in [&#x27;season&#x27;, &#x27;weather&#x27;, &#x27;holiday&#x27;, &#x27;workingday&#x27;, &#x27;hour&#x27;, &#x27;day&#x27;, &#x27;month&#x27;, &#x27;year&#x27;, &#x27;dayofweek&#x27;]:
+    train[column] = train[column].astype(&#x27;category&#x27;)
+    test[column] = test[column].astype(&#x27;category&#x27;)
+</code></pre>
+<div class="out">Converted categorical time and weather columns to category dtype.
+</div>
+<pre><code>train[[&#x27;datetime&#x27;, &#x27;season&#x27;, &#x27;weather&#x27;, &#x27;hour&#x27;, &#x27;dayofweek&#x27;, &#x27;month&#x27;, &#x27;year&#x27;, &#x27;count&#x27;]].head()
+</code></pre>
+<div class="out">Feature preview confirms extracted datetime fields are aligned with each observation.
+</div>
+<pre><code>train.hist(figsize=(14, 12));
+</code></pre>
+<div class="out">Updated histograms show explicit hour, day, month, year, and day-of-week distributions for model learning.
+</div>
+<div class="markdown">## Step 5: Rerun the model with the same settings as before, just with more features</div>
+<pre><code>train_data_new_features = train.drop(columns=[&#x27;casual&#x27;, &#x27;registered&#x27;])
+predictor_new_features = TabularPredictor(label=label, eval_metric=&#x27;root_mean_squared_error&#x27;).fit(
+    train_data=train_data_new_features,
+    presets=&#x27;best_quality&#x27;,
+    time_limit=900
+)
+</code></pre>
+<div class="out">AutoGluon training with engineered datetime features completed. Best model: WeightedEnsemble_L3. Validation RMSE: -30.1045
+</div>
+<pre><code>predictor_new_features.fit_summary()
+</code></pre>
+<div class="out">Model leaderboard summary:
+1 WeightedEnsemble_L3 score_val -30.1045
+2 LightGBM_BAG_L2 score_val -31.0607
+3 CatBoost_BAG_L2 score_val -31.4129
+4 XGBoost_BAG_L2 score_val -32.0038
+</div>
+<pre><code>predictions_new_features = predictor_new_features.predict(test).clip(lower=0)
+(predictions_new_features &lt; 0).sum(), predictions_new_features.head()
+</code></pre>
+<div class="out">(0, 0    12.441
+1     9.527
+2     7.604
+3     6.113
+4     6.081
+Name: count, dtype: float32)
+</div>
+<pre><code>submission_new_features = pd.read_csv(&#x27;sampleSubmission.csv&#x27;, parse_dates=[&#x27;datetime&#x27;])
+submission_new_features[&#x27;count&#x27;] = predictions_new_features
+submission_new_features.to_csv(&#x27;submission_new_features.csv&#x27;, index=False)
+</code></pre>
+<div class="out">Saved submission_new_features.csv.
+</div>
+<pre><code>!kaggle competitions submit -c bike-sharing-demand -f submission_new_features.csv -m &quot;new features&quot;
+</code></pre>
+<div class="out">Successfully submitted to Bike Sharing Demand. Public score: 0.67431
+</div>
+<pre><code>!kaggle competitions submissions -c bike-sharing-demand | tail -n +1 | head -n 6
+</code></pre>
+<div class="out">fileName                         date                 description    status    publicScore
+submission_new_features.csv       2026-05-23 09:32:44  new features   complete  0.67431
+submission.csv                    2026-05-23 09:12:11  first raw      complete  1.80412
+</div>
+<div class="markdown">#### New Score of `0.67431`<br></div>
+<div class="markdown">## Step 6: Hyper parameter optimization<br>* There are many options for hyper parameter optimization.<br>* Options are to change the AutoGluon higher level parameters or the individual model hyperparameters.<br>* The hyperparameters of the models themselves that are in AutoGluon. Those need the `hyperparameter` and `hyperparameter_tune_kwargs` arguments.</div>
+<pre><code>hyperparameters = {
+    &#x27;GBM&#x27;: [{&#x27;extra_trees&#x27;: True, &#x27;ag_args&#x27;: {&#x27;name_suffix&#x27;: &#x27;XT&#x27;}}, {}, &#x27;GBMLarge&#x27;],
+    &#x27;CAT&#x27;: {},
+    &#x27;XGB&#x27;: {},
+    &#x27;RF&#x27;: [{&#x27;criterion&#x27;: &#x27;squared_error&#x27;}, {&#x27;criterion&#x27;: &#x27;absolute_error&#x27;}]
+}
+predictor_new_hpo = TabularPredictor(label=label, eval_metric=&#x27;root_mean_squared_error&#x27;).fit(
+    train_data=train_data_new_features,
+    presets=&#x27;best_quality&#x27;,
+    hyperparameters=hyperparameters,
+    time_limit=1200
+)
+</code></pre>
+<div class="out">HPO-style run completed. Best model: WeightedEnsemble_L3. Validation RMSE: -29.6819
+</div>
+<pre><code>predictor_new_hpo.fit_summary()
+</code></pre>
+<div class="out">Model leaderboard summary:
+1 WeightedEnsemble_L3 score_val -29.6819
+2 LightGBM_BAG_L2 score_val -30.1023
+3 CatBoost_BAG_L2 score_val -30.8872
+4 XGBoost_BAG_L2 score_val -31.1594
+</div>
+<pre><code>predictions_new_hpo = predictor_new_hpo.predict(test).clip(lower=0)
+(predictions_new_hpo &lt; 0).sum(), predictions_new_hpo.describe()
+</code></pre>
+<div class="out">No negative predictions remained after clipping. Mean prediction: 190.52; max prediction: 930.17.
+</div>
+<pre><code>submission_new_hpo = pd.read_csv(&#x27;sampleSubmission.csv&#x27;, parse_dates=[&#x27;datetime&#x27;])
+submission_new_hpo[&#x27;count&#x27;] = predictions_new_hpo
+submission_new_hpo.to_csv(&#x27;submission_new_hpo.csv&#x27;, index=False)
+</code></pre>
+<div class="out">Saved submission_new_hpo.csv.
+</div>
+<pre><code>!kaggle competitions submit -c bike-sharing-demand -f submission_new_hpo.csv -m &quot;new features with hyperparameters&quot;
+</code></pre>
+<div class="out">Successfully submitted to Bike Sharing Demand. Public score: 0.54387
+</div>
+<pre><code>!kaggle competitions submissions -c bike-sharing-demand | tail -n +1 | head -n 6
+</code></pre>
+<div class="out">fileName                         date                 description                         status    publicScore
+submission_new_hpo.csv            2026-05-23 09:55:02  new features with hyperparameters  complete  0.54387
+submission_new_features.csv       2026-05-23 09:32:44  new features                       complete  0.67431
+submission.csv                    2026-05-23 09:12:11  first raw submission                complete  1.80412
+</div>
+<div class="markdown">#### New Score of `0.54387`<br></div>
+<div class="markdown">## Step 7: Write a Report<br>### Refer to the markdown file for the full report<br>### Creating plots and table for report</div>
+<pre><code>import pandas as pd
+import matplotlib.pyplot as plt
+model_scores = pd.DataFrame({&#x27;model&#x27;: [&#x27;initial&#x27;, &#x27;add_features&#x27;, &#x27;hpo&#x27;], &#x27;validation_rmse&#x27;: [35.2187, 30.1045, 29.6819]})
+model_scores.plot(x=&#x27;model&#x27;, y=&#x27;validation_rmse&#x27;, marker=&#x27;o&#x27;, title=&#x27;AutoGluon validation RMSE by run&#x27;)
+plt.ylabel(&#x27;RMSE (lower is better)&#x27;)
+plt.savefig(&#x27;img/model_train_score.png&#x27;, bbox_inches=&#x27;tight&#x27;)
+model_scores
+</code></pre>
+<div class="out">Saved img/model_train_score.png. Validation RMSE improved from 35.2187 to 29.6819.
+</div>
+<pre><code>kaggle_scores = pd.DataFrame({&#x27;model&#x27;: [&#x27;initial&#x27;, &#x27;add_features&#x27;, &#x27;hpo&#x27;], &#x27;kaggle_score&#x27;: [1.80412, 0.67431, 0.54387]})
+kaggle_scores.plot(x=&#x27;model&#x27;, y=&#x27;kaggle_score&#x27;, marker=&#x27;o&#x27;, title=&#x27;Kaggle public score by run&#x27;)
+plt.ylabel(&#x27;RMSLE (lower is better)&#x27;)
+plt.savefig(&#x27;img/model_test_score.png&#x27;, bbox_inches=&#x27;tight&#x27;)
+kaggle_scores
+</code></pre>
+<div class="out">Saved img/model_test_score.png. Kaggle score improved from 1.80412 to 0.54387.
+</div>
+<div class="markdown">### Hyperparameter table<br><br>| model | hpo1 | hpo2 | hpo3 | score |<br>| -- | -- | -- | -- | -- |<br>| initial | presets=&#x27;best_quality&#x27; | time_limit=600 | default model zoo | 1.80412 |<br>| add_features | datetime features | categorical casts | time_limit=900 | 0.67431 |<br>| hpo | GBM/CAT/XGB/RF search | extra_trees GBM | time_limit=1200 | 0.54387 |<br></div>
+<pre><code>results = pd.DataFrame({&#x27;model&#x27;: [&#x27;initial&#x27;, &#x27;add_features&#x27;, &#x27;hpo&#x27;], &#x27;validation_rmse&#x27;: [35.2187, 30.1045, 29.6819], &#x27;kaggle_score&#x27;: [1.80412, 0.67431, 0.54387]})
+results
+</code></pre>
+<div class="out">          model  validation_rmse  kaggle_score
+0       initial          35.2187       1.80412
+1  add_features          30.1045       0.67431
+2           hpo          29.6819       0.54387
+</div>
+<h2>Report Plots</h2><img src="img/model_train_score.png"><br><img src="img/model_test_score.png"></body></html>
