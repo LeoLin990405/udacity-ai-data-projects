@@ -1,0 +1,19 @@
+{
+  "rows": 18442,
+  "columns": 9,
+  "train_rows": 14753,
+  "test_rows": 3689,
+  "recommended_rate": 0.8162346817048043,
+  "best_params": {
+    "classifier__C": 1.0,
+    "preprocess__review_text__features__tfidf__ngram_range": [
+      1,
+      2
+    ]
+  },
+  "cv_best_f1": 0.9263871476356383,
+  "accuracy": 0.8896719978313906,
+  "precision": 0.9680086268871315,
+  "recall": 0.8943872467618731,
+  "classification_report": "              precision    recall  f1-score   support\n\n           0       0.65      0.87      0.74       678\n           1       0.97      0.89      0.93      3011\n\n    accuracy                           0.89      3689\n   macro avg       0.81      0.88      0.84      3689\nweighted avg       0.91      0.89      0.90      3689\n"
+}
