@@ -1,0 +1,7 @@
+Document ID: financial_report_q2
+Acme Health Financial Report Q2
+Revenue was $1,410,000 in Q2.
+Operating expenses were $830,000 in Q2.
+Net income was $580,000.
+Revenue grew because outpatient procedure volume increased and billing cycle time improved.
+Management recommended monitoring vendor costs and maintaining the new reimbursement review process.

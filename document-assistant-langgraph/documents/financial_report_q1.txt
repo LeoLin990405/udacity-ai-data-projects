@@ -1,0 +1,7 @@
+Document ID: financial_report_q1
+Acme Health Financial Report Q1
+Revenue was $1,250,000 in Q1.
+Operating expenses were $780,000 in Q1.
+Net income was $470,000.
+The largest cost categories were clinical staffing, data infrastructure, and compliance operations.
+Management noted that delayed insurance reimbursements increased working capital pressure.

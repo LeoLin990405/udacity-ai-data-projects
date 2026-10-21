@@ -1,0 +1,7 @@
+Document ID: healthcare_quality_report
+Healthcare Quality and Safety Report
+The hospital tracked 12,400 patient visits during the quarter.
+The readmission rate was 7.5 percent.
+Average patient wait time was 18 minutes.
+Patient satisfaction was 91 percent.
+The main improvement priorities are reducing avoidable readmissions, shortening triage queues, and strengthening post-discharge follow-up.
