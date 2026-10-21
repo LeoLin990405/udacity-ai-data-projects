@@ -1,0 +1,44 @@
+{
+  "median_val": 3,
+  "user_article_interactions": 45993,
+  "max_views_by_user": 364,
+  "max_views": 937,
+  "most_viewed_article_id": "1429.0",
+  "unique_articles": 714,
+  "unique_users": 5148,
+  "total_articles": 1051,
+  "top_5_article_ids": [
+    "1429.0",
+    "1330.0",
+    "1431.0",
+    "1427.0",
+    "1364.0"
+  ],
+  "top_5_article_names": [
+    "use deep learning for image classification",
+    "insights from new york car accident reports",
+    "visualize car data with brunel",
+    "use xgboost, scikit-learn & ibm watson machine learning apis",
+    "predicting churn with the spss random tree algorithm"
+  ],
+  "similarity_check": {
+    "The user that is most similar to user 1.": 3933,
+    "The user that is the 10th most similar to user 131": 242
+  },
+  "content_recs_for_article_0": [
+    "182",
+    "335",
+    "355",
+    "428",
+    "416"
+  ],
+  "svd_recs_for_top_article": [
+    "1122.0",
+    "1419.0",
+    "1221.0",
+    "60.0",
+    "870.0"
+  ],
+  "chosen_latent_features": 50,
+  "reconstruction_accuracy_at_50": 0.9950500301110928
+}
