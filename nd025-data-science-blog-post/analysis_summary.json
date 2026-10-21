@@ -1,0 +1,48 @@
+{
+  "summary": {
+    "rows": 20640,
+    "cols": 13,
+    "missing_total_bedrooms": 207,
+    "median_value": 179700.0,
+    "mean_value": 206855.81690891474
+  },
+  "metrics": {
+    "rmse": 72187.82063437616,
+    "mae": 51844.781728659495,
+    "r2": 0.6128741982509491
+  },
+  "top_coefficients": [
+    [
+      "intercept",
+      207194.238432655
+    ],
+    [
+      "median_income",
+      83377.74129318539
+    ],
+    [
+      "ocean_INLAND",
+      -19046.466697468903
+    ],
+    [
+      "bedrooms_per_room",
+      18332.08548708197
+    ],
+    [
+      "ocean_NEAR OCEAN",
+      13909.695600322784
+    ],
+    [
+      "housing_median_age",
+      12019.42628680472
+    ],
+    [
+      "ocean_NEAR BAY",
+      11381.732750905152
+    ],
+    [
+      "ocean_<1H OCEAN",
+      10544.111347648606
+    ]
+  ]
+}
