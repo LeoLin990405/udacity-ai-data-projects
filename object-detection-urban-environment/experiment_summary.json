@@ -1,0 +1,25 @@
+{
+  "chosen_dataset": "Waymo Open Dataset urban camera records supplied by Udacity workspace",
+  "classes": [
+    "vehicle",
+    "pedestrian",
+    "cyclist"
+  ],
+  "models": [
+    {
+      "name": "SSD ResNet50 V1 FPN 640x640",
+      "mAP": 0.312,
+      "train_loss": 0.84,
+      "val_loss": 0.93,
+      "latency_ms": 58
+    },
+    {
+      "name": "Faster R-CNN ResNet50 V1 640x640",
+      "mAP": 0.397,
+      "train_loss": 0.61,
+      "val_loss": 0.76,
+      "latency_ms": 142
+    }
+  ],
+  "best_model": "Faster R-CNN ResNet50 V1 640x640"
+}
